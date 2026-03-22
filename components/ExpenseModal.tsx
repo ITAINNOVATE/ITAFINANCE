@@ -53,7 +53,11 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, expense }: Ex
   }, [expense]);
 
   const fetchProjects = async () => {
-    const { data } = await supabase.from('projets').select('id, nom');
+    const { data } = await supabase
+      .from('projets')
+      .select('id, nom, clients(nom)')
+      .order('nom', { ascending: true });
+    
     if (data) setProjects(data);
   };
 
@@ -169,8 +173,12 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, expense }: Ex
                   onChange={e => setFormData({ ...formData, project_id: e.target.value })}
                   className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm text-white appearance-none cursor-pointer"
                 >
-                  <option value="" className="bg-background text-white">Aucun projet</option>
-                  {projects.map(p => <option key={p.id} value={p.id} className="bg-background text-white">{p.nom}</option>)}
+                  <option value="" className="bg-background text-white">Aucun projet associé</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id} className="bg-background text-white">
+                      {p.clients?.nom ? `${p.clients.nom} - ` : ''}{p.nom}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
