@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -8,111 +8,304 @@ import {
   AlertCircle,
   Clock3,
   ChevronRight,
-  Bell
+  Bell,
+  Loader2,
+  TrendingUp,
+  Wallet,
+  ArrowRight,
+  History,
+  CheckCircle,
+  XCircle,
+  ArrowUpRight,
+  DollarSign
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../lib/supabase';
 
-const mockEcheances = [
-  { id: 1, projet: 'E-commerce ITA', client: 'ITA Innovate', dueDate: '22 Mars 2026', amount: '250.000', status: 'En retard', priority: 'high' },
-  { id: 2, projet: 'Refonte Site Web', client: 'Alpha Corp', dueDate: '25 Mars 2026', amount: '500.000', status: 'En attente', priority: 'medium' },
-  { id: 3, projet: 'App Mobile v2', client: 'Bêta SARL', dueDate: '30 Mars 2026', amount: '1.200.000', status: 'En attente', priority: 'low' },
-  { id: 4, projet: 'Audit Sécurité', client: 'Gamma SA', dueDate: '15 Avril 2026', amount: '450.000', status: 'Payé', priority: 'none' },
-];
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Schedule {
+  id: string;
+  project_id: string;
+  due_date: string;
+  amount: number;
+  status: 'Payé' | 'En attente' | 'En retard';
+}
 
-export default function EcheancierList() {
+interface Payment {
+  id: string;
+  project_id: string;
+  amount: number;
+  payment_date: string;
+  notes: string | null;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  total_budget: number;
+  status: string;
+  clients: { name: string } | null;
+  schedules: Schedule[];
+  payments: Payment[];
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function formatCFA(n: number) {
+  return n.toLocaleString('fr-FR') + ' FCFA';
+}
+
+function formatDate(d: string | null) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ─── Project Card Component ───────────────────────────────────────────────────
+function ProjectScheduleCard({ project }: { project: Project }) {
+  const totalPaid = project.payments.reduce((sum, p) => sum + p.amount, 0);
+  const remaining = project.total_budget - totalPaid;
+  const progress = Math.min(100, (totalPaid / project.total_budget) * 100);
+  
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <div className="space-y-6">
+    <motion.div 
+      layout
+      className="glass-card p-0 overflow-hidden border border-white/5 bg-white/[0.02] hover:bg-white/[0.03] transition-all group"
+    >
+      {/* Header section */}
+      <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-lg shadow-primary/5">
+            <TrendingUp size={22} />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-white group-hover:text-primary transition-colors">{project.name}</h3>
+            <p className="text-xs text-text-muted mt-1 uppercase font-bold tracking-widest flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/40"></span>
+              {project.clients?.name || 'Client inconnu'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="text-right hidden sm:block">
+            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mb-1">Budget Total</p>
+            <p className="text-sm font-black text-white">{formatCFA(project.total_budget)}</p>
+          </div>
+          <div className="h-10 w-[1px] bg-white/5 hidden sm:block" />
+          <div className="text-right">
+            <p className="text-[10px] text-secondary font-bold uppercase tracking-widest mb-1">Déjà Payé</p>
+            <p className="text-sm font-black text-secondary">{formatCFA(totalPaid)}</p>
+          </div>
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all ${isExpanded ? 'rotate-90' : ''}`}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="px-6 pb-6">
+        <div className="flex justify-between items-end mb-2">
+           <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Progression des règlements</span>
+           <span className="text-xs font-black text-secondary">{Math.round(progress)}%</span>
+        </div>
+        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+          />
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden border-t border-white/5 bg-black/20"
+          >
+            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Column: Schedules */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Calendar size={16} className="text-primary" />
+                  <h4 className="text-xs font-black text-white uppercase tracking-widest">Échéancier Prévisionnel</h4>
+                </div>
+                
+                {project.schedules.length === 0 ? (
+                  <p className="text-xs text-text-muted italic py-4 bg-white/[0.02] rounded-xl text-center">Aucun échéancier programmé</p>
+                ) : (
+                  <div className="space-y-2">
+                    {project.schedules.map(s => (
+                      <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-all">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${s.status === 'Payé' ? 'bg-secondary' : 'bg-amber-400 animate-pulse'}`} />
+                          <div>
+                            <p className="text-xs font-bold text-white leading-none">{formatDate(s.due_date)}</p>
+                            <p className="text-[10px] text-text-muted mt-1 uppercase font-bold">{s.status}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs font-black text-white">{formatCFA(s.amount)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Payments History */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <History size={16} className="text-secondary" />
+                  <h4 className="text-xs font-black text-white uppercase tracking-widest">Historique des Paiements</h4>
+                </div>
+
+                {project.payments.length === 0 ? (
+                  <p className="text-xs text-text-muted italic py-4 bg-white/[0.02] rounded-xl text-center">Aucun paiement enregistré</p>
+                ) : (
+                  <div className="space-y-2">
+                    {project.payments.map(p => (
+                      <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/5 border border-secondary/10 hover:border-secondary/20 transition-all">
+                        <div className="flex items-center gap-3">
+                           <div className="p-1.5 rounded-lg bg-secondary/20 text-secondary">
+                              <ArrowUpRight size={14} />
+                           </div>
+                           <div>
+                              <p className="text-xs font-bold text-white leading-none">{formatDate(p.payment_date)}</p>
+                              <p className="text-[10px] text-text-muted mt-1 italic">{p.notes || 'Paiement standard'}</p>
+                           </div>
+                        </div>
+                        <p className="text-xs font-black text-secondary">{formatCFA(p.amount)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Total Recap */}
+                <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center text-sm">
+                   <span className="font-bold text-text-muted uppercase text-[10px] tracking-widest">Reste à recouvrer :</span>
+                   <span className={`font-black ${remaining <= 0 ? 'text-secondary' : 'text-primary'}`}>
+                      {remaining <= 0 ? 'Soldé' : formatCFA(remaining)}
+                   </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function EcheancierList() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ totalPending: 0, totalPaid: 0, totalRemaining: 0 });
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*, clients(name), schedules(*), payments(*)')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      const projs = data as Project[];
+      setProjects(projs);
+      
+      // Calculate Global Stats
+      let totalBudget = 0;
+      let totalPaid = 0;
+      projs.forEach(p => {
+        totalBudget += p.total_budget;
+        totalPaid += p.payments.reduce((sum, pay) => sum + pay.amount, 0);
+      });
+      
+      setStats({
+        totalPending: totalBudget - totalPaid,
+        totalPaid: totalPaid,
+        totalRemaining: totalBudget - totalPaid
+      });
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="animate-spin text-primary mb-4" size={32} />
+        <p className="text-text-muted font-bold text-sm tracking-widest uppercase">Chargement des données financières...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Global Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card flex items-center gap-4 border-l-4 border-red-500">
-          <div className="p-3 rounded-xl bg-red-400/10 text-red-500">
-            <AlertCircle size={24} />
+        <div className="glass-card flex items-center gap-5 border-l-4 border-primary bg-primary/5 shadow-xl shadow-primary/5">
+          <div className="p-4 rounded-2xl bg-primary/20 text-primary">
+            <Wallet size={24} />
           </div>
           <div>
-            <p className="text-xs text-text-muted font-medium">EN RETARD</p>
-            <h3 className="text-xl font-bold">1.250.000 <span className="text-xs">FCFA</span></h3>
+            <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em] mb-1">Total à encaisser</p>
+            <h3 className="text-xl font-black text-white">{formatCFA(stats.totalPending)}</h3>
           </div>
         </div>
-        <div className="glass-card flex items-center gap-4 border-l-4 border-accent">
-          <div className="p-3 rounded-xl bg-accent/10 text-accent">
-            <Clock3 size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-text-muted font-medium">À VENIR (7j)</p>
-            <h3 className="text-xl font-bold">3.400.000 <span className="text-xs">FCFA</span></h3>
-          </div>
-        </div>
-        <div className="glass-card flex items-center gap-4 border-l-4 border-secondary">
-          <div className="p-3 rounded-xl bg-secondary/10 text-secondary">
+        
+        <div className="glass-card flex items-center gap-5 border-l-4 border-secondary bg-secondary/5 shadow-xl shadow-secondary/5">
+          <div className="p-4 rounded-2xl bg-secondary/20 text-secondary">
             <CheckCircle2 size={24} />
           </div>
           <div>
-            <p className="text-xs text-text-muted font-medium">PAYÉ CE MOIS</p>
-            <h3 className="text-xl font-bold">8.600.000 <span className="text-xs">FCFA</span></h3>
+            <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em] mb-1">Total Encaissé</p>
+            <h3 className="text-xl font-black text-white">{formatCFA(stats.totalPaid)}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card flex items-center gap-5 border-l-4 border-accent bg-accent/5 shadow-xl shadow-accent/5">
+          <div className="p-4 rounded-2xl bg-accent/20 text-accent">
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em] mb-1">Reste à percevoir</p>
+            <h3 className="text-xl font-black text-white">{formatCFA(stats.totalRemaining)}</h3>
           </div>
         </div>
       </div>
 
-      <div className="glass-card p-0 overflow-hidden">
-        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-          <h3 className="font-bold text-white flex items-center gap-2">
-            <Calendar size={18} className="text-primary" /> Prochaines Échéances
-          </h3>
-          <button className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
-            VOIR CALENDRIER <ChevronRight size={14} />
-          </button>
+      {/* Projects List with nested Schedules & Payments */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+            <DollarSign className="text-primary" size={16} />
+          </div>
+          <h2 className="text-lg font-black text-white tracking-tight uppercase tracking-widest text-[14px]">Situation Financière par Projet</h2>
         </div>
-        <div className="divide-y divide-white/5">
-          {mockEcheances.map((e, i) => (
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              key={e.id} 
-              className="p-6 flex flex-col md:flex-row md:items-center gap-6 hover:bg-white/5 transition-colors group"
-            >
-              <div className="flex items-center gap-4 min-w-[240px]">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold shadow-lg ${
-                  e.status === 'Payé' ? 'bg-secondary/20 text-secondary' : 
-                  e.status === 'En retard' ? 'bg-red-400/20 text-red-500' : 'bg-primary/20 text-primary'
-                }`}>
-                  {e.dueDate.split(' ')[0]}
-                </div>
-                <div>
-                  <h4 className="font-bold text-white leading-tight group-hover:text-primary transition-colors">{e.projet}</h4>
-                  <p className="text-xs text-text-muted mt-0.5">{e.client}</p>
-                </div>
-              </div>
 
-              <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4 items-center">
-                <div>
-                  <p className="text-[10px] uppercase text-text-muted tracking-wider mb-1">Montant</p>
-                  <p className="font-bold text-white">{e.amount} FCFA</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase text-text-muted tracking-wider mb-1">Date Limite</p>
-                  <p className="text-sm font-medium text-text-muted">{e.dueDate}</p>
-                </div>
-                <div className="md:text-right">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    e.status === 'Payé' ? 'bg-secondary/10 text-secondary' : 
-                    e.status === 'En retard' ? 'bg-red-400/10 text-red-500 animate-pulse' : 'bg-accent/10 text-accent'
-                  }`}>
-                    {e.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-text-muted transition-all" title="Envoyer un rappel">
-                  <Bell size={18} />
-                </button>
-                <button className="px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary text-white transition-all text-xs font-bold">
-                  VALIDER
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {projects.length === 0 ? (
+          <div className="glass-card py-20 flex flex-col items-center">
+            <AlertCircle size={48} className="text-white/10 mb-4" />
+            <p className="text-white font-bold">Aucun projet actif trouvé</p>
+            <p className="text-text-muted text-sm mt-1">Créez des projets et définissez leurs échéanciers pour voir les données s'afficher ici.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {projects.map((p, i) => (
+              <ProjectScheduleCard key={p.id} project={p} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
