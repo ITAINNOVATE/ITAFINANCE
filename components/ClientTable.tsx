@@ -534,11 +534,11 @@ export default function ClientTable() {
                 <thead>
                   <tr className="border-b border-white/10 text-[10px] uppercase tracking-wider text-text-muted bg-white/[0.03]">
                     <th className="px-5 py-3.5 font-black text-center w-12">#</th>
-                    <th className="px-5 py-3.5 font-black">Client</th>
-                    <th className="px-5 py-3.5 font-black">Contact</th>
+                    <th className="px-5 py-3.5 font-black">Nom et prénoms</th>
+                    <th className="px-5 py-3.5 font-black">ID</th>
                     <th className="px-5 py-3.5 font-black">Type</th>
                     <th className="px-5 py-3.5 font-black">Adresse</th>
-                    <th className="px-5 py-3.5 font-black text-right">Actions</th>
+                    <th className="px-5 py-3.5 font-black text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
@@ -558,31 +558,17 @@ export default function ClientTable() {
                             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-sm border border-white/5 flex-shrink-0">
                               {client.name.charAt(0)}
                             </div>
-                            <div>
-                               <p className="font-bold text-white truncate max-w-[160px]">{client.name}</p>
-                               {client.code && (
-                                 <p className="text-[9px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-block mt-0.5 tracking-tighter uppercase whitespace-nowrap">
-                                   {client.code}
-                                 </p>
-                               )}
-                            </div>
+                            <p className="font-bold text-white truncate max-w-[200px]">{client.name}</p>
                           </div>
                         </td>
                         <td className="px-5 py-4">
-                          <div className="space-y-1">
-                            {client.email && (
-                              <p className="text-xs flex items-center gap-1.5 text-text-muted">
-                                <Mail size={10} className="text-primary flex-shrink-0" />
-                                <span className="truncate max-w-[170px]">{client.email}</span>
-                              </p>
-                            )}
-                            {client.phone && (
-                              <p className="text-xs flex items-center gap-1.5 text-text-muted">
-                                <Phone size={10} className="text-secondary flex-shrink-0" />
-                                {client.phone}
-                              </p>
-                            )}
-                          </div>
+                           {client.code ? (
+                             <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded inline-block tracking-tighter uppercase whitespace-nowrap">
+                               {client.code}
+                             </span>
+                           ) : (
+                             <span className="text-text-muted/30 text-xs">—</span>
+                           )}
                         </td>
                         <td className="px-5 py-4">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${client.type === 'Entreprise' ? 'text-blue-400 bg-blue-400/10' : 'text-purple-400 bg-purple-400/10'}`}>
