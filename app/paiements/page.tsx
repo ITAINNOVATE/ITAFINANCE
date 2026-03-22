@@ -1,7 +1,13 @@
 'use client';
 
 import React from 'react';
-import PaymentTable from '../../components/PaymentTable';
+import dynamic from 'next/dynamic';
+
+const PaymentTable = dynamic(() => import('../../components/PaymentTable'), { 
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-white/5 h-96 rounded-2xl" />
+});
+
 
 export default function PaiementsPage() {
   return (

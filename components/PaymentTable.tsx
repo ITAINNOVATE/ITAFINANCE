@@ -6,7 +6,8 @@ import {
   FileDown, Plus, X, Loader2, CheckCircle, XCircle, AlertCircle, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import jsPDF from 'jspdf';
+// import jsPDF from 'jspdf';
+
 import { supabase } from '../lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -260,9 +261,11 @@ export default function PaymentTable() {
     }
   };
 
-  const generatePDF = (p: Payment) => {
+  const generatePDF = async (p: Payment) => {
     try {
+      const { default: jsPDF } = await import('jspdf');
       const doc = new jsPDF();
+
       
       // Header
       doc.setFontSize(22);
