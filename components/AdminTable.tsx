@@ -91,6 +91,18 @@ export default function AdminTable() {
     setIsSaving(false);
   };
 
+  const handleDelete = async (userId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ? Son profil sera supprimé et ses accès révoqués.')) return;
+    
+    // Note: This only deletes the profile. The auth user remains in Supabase Auth but will have no permissions.
+    const { error } = await supabase.from('profiles').delete().eq('id', userId);
+    if (!error) {
+      await fetchProfiles();
+    } else {
+      alert(error.message);
+    }
+  };
+
   if (loading) return (
     <div className="flex justify-center items-center h-64">
       <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -155,12 +167,20 @@ export default function AdminTable() {
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button 
-                    onClick={() => { setSelectedProfile(p); setIsModalOpen(true); }}
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-all border border-white/5"
-                  >
-                    <Settings size={14} />
-                  </button>
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => { setSelectedProfile(p); setIsModalOpen(true); }}
+                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-all border border-white/5"
+                    >
+                      <Settings size={14} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(p.id)}
+                      className="p-2 rounded-xl bg-white/5 hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-all border border-white/5"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
