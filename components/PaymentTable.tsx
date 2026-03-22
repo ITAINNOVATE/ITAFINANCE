@@ -490,18 +490,7 @@ export default function PaymentTable() {
   const handleSave = async (form: FormData) => {
     setIsSaving(true);
     try {
-      const extraInfo = [];
-      if (form.payment_method === 'Mobile Money' && form.transaction_id) 
-        extraInfo.push(`ID Trans: ${form.transaction_id}`);
-      if (form.payment_method === 'Virement' || form.payment_method === 'Chèque') {
-        if (form.bank_name) extraInfo.push(`Banque: ${form.bank_name}`);
-        if (form.reference_number) 
-          extraInfo.push(form.payment_method === 'Virement' ? `ID Vir: ${form.reference_number}` : `N° Chèque: ${form.reference_number}`);
-      }
-      
-      const formattedNotes = extraInfo.length > 0 
-        ? `[${extraInfo.join(' | ')}]${form.notes ? ' ' + form.notes : ''}`
-        : form.notes;
+      // No more note-packing, we use real columns
 
       const payload = {
         project_id: form.project_id || null,
@@ -509,7 +498,10 @@ export default function PaymentTable() {
         amount: parseFloat(form.amount) || 0,
         payment_method: form.payment_method,
         payment_date: form.payment_date || new Date().toISOString(),
-        notes: formattedNotes || null,
+        notes: form.notes || null,
+        transaction_id: form.transaction_id || null,
+        bank_name: form.bank_name || null,
+        reference_number: form.reference_number || null,
       };
 
       const { error } = await supabase.from('payments').insert([payload]);
@@ -581,24 +573,29 @@ export default function PaymentTable() {
       // Table Row
       doc.setFontSize(12);
       doc.setTextColor(0);
-      doc.text(p.notes || 'Règlement de service', 25, 122);
-      doc.text(p.payment_method, 110, 122);
-      doc.text(formatCFA(p.amount), 160, 122);
+      // Display specific transaction info if available
+      let yPos = 122;
+      doc.text(p.notes || 'Règlement de service', 25, yPos);
+      doc.text(p.payment_method, 110, yPos);
+      doc.text(formatCFA(p.amount), 160, yPos);
+
+      if (p.transaction_id || p.bank_name || p.reference_number) {
+        yPos += 6;
+        const details = [
+          p.transaction_id ? `ID Trans: ${p.transaction_id}` : null,
+          p.bank_name ? `Banque: ${p.bank_name}` : null,
+          p.reference_number ? `Réf/N°: ${p.reference_number}` : null
+        ].filter(Boolean).join(' | ');
+        
+        doc.setFontSize(9);
+        doc.setTextColor(120);
+        doc.text(details, 25, yPos);
+      }
 
       // Line before total
       doc.setDrawColor(230);
       doc.line(20, 135, 190, 135);
       
-      if (p.notes && p.notes.startsWith('[')) {
-        const match = p.notes.match(/\[(.*?)\]/);
-        if (match) {
-          const details = match[1];
-          doc.setFontSize(9);
-          doc.setTextColor(120);
-          doc.text(`Réf. Transaction: ${details}`, 25, 128);
-        }
-      }
-
       // Total amount
       doc.setFontSize(14);
       doc.setTextColor(80);
