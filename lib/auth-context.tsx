@@ -58,7 +58,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        // Fallback for super admin if profile not created yet
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email === 'groupita25@gmail.com') {
+          setProfile({
+            id: userId,
+            email: user.email,
+            role: 'admin',
+            permissions: ['clients', 'projets', 'paiements', 'echeanciers', 'depenses', 'rapports', 'admin']
+          });
+          return;
+        }
+        throw error;
+      };
       setProfile(data);
     } catch (e) {
       console.error('Error fetching profile:', e);

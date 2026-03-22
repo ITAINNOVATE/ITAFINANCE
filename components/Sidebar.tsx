@@ -44,8 +44,12 @@ export default function Sidebar() {
 
   const filteredItems = menuItems.filter(item => {
     if (item.id === 'dashboard') return true;
+    // Super admin always sees everything
+    if (profile?.email === 'groupita25@gmail.com') return true;
     if (!profile) return false;
+    // Admin role sees everything
     if (profile.role === 'admin') return true;
+    // Specific permissions for users
     return profile.permissions?.includes(item.id);
   });
 
