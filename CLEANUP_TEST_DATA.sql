@@ -11,7 +11,7 @@ DELETE FROM public.projects;
 -- Suppression des clients
 DELETE FROM public.clients;
 
--- Optionnel : Nettoyage des profils (sauf l'admin principal)
+-- Nettoyage des profils (sauf l'admin principal)
 DELETE FROM public.profiles WHERE email != 'groupita25@gmail.com';
 
 -- Réinitialisation des séquences d'ID si nécessaire (selon votre config)
