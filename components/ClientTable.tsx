@@ -205,6 +205,95 @@ function ClientModal({
   );
 }
 
+// ─── Client Details Modal ─────────────────────────────────────────────────────
+function ClientDetailsModal({ client, onClose }: { client: Client | null; onClose: () => void }) {
+  if (!client) return null;
+
+  return (
+    <AnimatePresence>
+      {client && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="glass-card w-full max-w-md p-0 overflow-hidden border border-white/10"
+            style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.6)' }}
+          >
+            <div className="h-1.5 bg-gradient-to-r from-primary to-accent" />
+            
+            <div className="p-8 space-y-8">
+              {/* Header Details */}
+              <div className="text-center">
+                <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4 text-primary font-black text-3xl shadow-xl shadow-primary/5">
+                  {client.name.charAt(0)}
+                </div>
+                <h3 className="text-xl font-black text-white">{client.name}</h3>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${client.type === 'Entreprise' ? 'text-blue-400 bg-blue-400/10' : 'text-purple-400 bg-purple-400/10'}`}>
+                    {client.type}
+                  </span>
+                  {client.code && (
+                    <span className="text-[10px] font-black text-primary bg-primary/10 px-2.5 py-1 rounded-full uppercase tracking-widest">
+                      {client.code}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Info Grid */}
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                      <Mail size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Email</p>
+                      <p className="text-sm font-bold text-white mt-0.5">{client.email || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
+                      <Phone size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Téléphone</p>
+                      <p className="text-sm font-bold text-white mt-0.5">{client.phone || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
+                      <MapPin size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Adresse</p>
+                      <p className="text-sm font-bold text-white mt-0.5">{client.address || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={onClose}
+                className="w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all border border-white/5"
+              >
+                Fermer
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Delete Confirmation Modal ────────────────────────────────────────────────
 function DeleteModal({ client, onConfirm, onClose, isDeleting }: { client: Client | null; onConfirm: () => void; onClose: () => void; isDeleting: boolean }) {
   return (
@@ -244,7 +333,7 @@ function DeleteModal({ client, onConfirm, onClose, isDeleting }: { client: Clien
 }
 
 // ─── Client Card (Mobile View) ─────────────────────────────────────────────────
-function ClientCard({ client, onEdit, onDelete, index }: { client: Client; onEdit: (c: Client) => void; onDelete: (c: Client) => void; index: number }) {
+function ClientCard({ client, onEdit, onDelete, onView, index }: { client: Client; onEdit: (c: Client) => void; onDelete: (c: Client) => void; onView: (c: Client) => void; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -273,6 +362,9 @@ function ClientCard({ client, onEdit, onDelete, index }: { client: Client; onEdi
           </div>
         </div>
         <div className="flex gap-1.5 flex-shrink-0">
+          <button onClick={() => onView(client)} className="p-2 rounded-lg bg-white/5 hover:bg-primary/10 text-text-muted hover:text-primary transition-all" title="Voir détails">
+            <Eye size={14} />
+          </button>
           <button onClick={() => onEdit(client)} className="p-2 rounded-lg bg-white/5 hover:bg-blue-400/10 text-text-muted hover:text-blue-400 transition-all">
             <Edit2 size={14} />
           </button>
@@ -304,6 +396,7 @@ export default function ClientTable() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -429,6 +522,10 @@ export default function ClientTable() {
         onClose={() => setClientToDelete(null)}
         isDeleting={isDeleting}
       />
+      <ClientDetailsModal
+        client={viewingClient}
+        onClose={() => setViewingClient(null)}
+      />
 
       {/* Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -522,7 +619,7 @@ export default function ClientTable() {
           <div className="grid gap-3 md:hidden">
             <AnimatePresence>
               {paginated.map((client, i) => (
-                <ClientCard key={client.id} client={client} onEdit={openEdit} onDelete={setClientToDelete} index={i} />
+                <ClientCard key={client.id} client={client} onEdit={openEdit} onDelete={setClientToDelete} onView={setViewingClient} index={i} />
               ))}
             </AnimatePresence>
           </div>
@@ -587,6 +684,13 @@ export default function ClientTable() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setViewingClient(client)}
+                              className="p-2 rounded-lg bg-white/5 hover:bg-primary/10 text-text-muted hover:text-primary transition-all"
+                              title="Voir détails"
+                            >
+                              <Eye size={14} />
+                            </button>
                             <button
                               onClick={() => openEdit(client)}
                               className="p-2 rounded-lg bg-white/5 hover:bg-blue-400/10 text-text-muted hover:text-blue-400 transition-all"
