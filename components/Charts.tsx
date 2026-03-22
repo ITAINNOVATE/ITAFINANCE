@@ -14,24 +14,35 @@ import {
   Cell
 } from 'recharts';
 
-const data = [
-  { name: 'Jan', income: 4000, expenses: 2400 },
-  { name: 'Fév', income: 3000, expenses: 1398 },
-  { name: 'Mar', income: 2000, expenses: 9800 },
-  { name: 'Avr', income: 2780, expenses: 3908 },
-  { name: 'Mai', income: 1890, expenses: 4800 },
-  { name: 'Juin', income: 2390, expenses: 3800 },
-];
+interface RevenueData {
+  name: string;
+  income: number;
+  expenses: number;
+}
 
-export function RevenueChart() {
+export function RevenueChart({ data = [] }: { data?: RevenueData[] }) {
+  // Use mock data if empty for visual demo if needed, or just empty
+  const displayData = data.length > 0 ? data : [
+    { name: 'Jan', income: 0, expenses: 0 },
+    { name: 'Fév', income: 0, expenses: 0 },
+    { name: 'Mar', income: 0, expenses: 0 },
+    { name: 'Avr', income: 0, expenses: 0 },
+    { name: 'Mai', income: 0, expenses: 0 },
+    { name: 'Juin', income: 0, expenses: 0 },
+  ];
+
   return (
     <div className="h-[300px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
+        <AreaChart data={displayData}>
           <defs>
             <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
               <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+            </linearGradient>
+            <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
@@ -44,10 +55,10 @@ export function RevenueChart() {
           />
           <YAxis 
             stroke="#94a3b8" 
-            fontSize={12} 
+            fontSize={10} 
             tickLine={false} 
             axisLine={false} 
-            tickFormatter={(value) => `${value}€`}
+            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
           />
           <Tooltip 
             contentStyle={{ 
@@ -64,6 +75,16 @@ export function RevenueChart() {
             fillOpacity={1} 
             fill="url(#colorIncome)" 
             strokeWidth={3}
+            name="Entrées"
+          />
+          <Area 
+            type="monotone" 
+            dataKey="expenses" 
+            stroke="#ef4444" 
+            fillOpacity={1} 
+            fill="url(#colorExpense)" 
+            strokeWidth={2}
+            name="Sorties"
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -71,18 +92,21 @@ export function RevenueChart() {
   );
 }
 
-export function ExpenseDistribution() {
-  const expenseData = [
-    { name: 'Salaires', value: 400, color: '#2563eb' },
-    { name: 'Achats', value: 300, color: '#10b981' },
-    { name: 'Charges', value: 300, color: '#f59e0b' },
-    { name: 'Divers', value: 200, color: '#ef4444' },
+interface DistributionData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export function ExpenseDistribution({ data = [] }: { data?: DistributionData[] }) {
+  const displayData = data.length > 0 ? data : [
+    { name: 'Aucune donnée', value: 100, color: 'rgba(255,255,255,0.05)' }
   ];
 
   return (
     <div className="h-[300px] w-full mt-4">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={expenseData} layout="vertical">
+        <BarChart data={displayData} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.1)" />
           <XAxis type="number" hide />
           <YAxis 
@@ -92,17 +116,19 @@ export function ExpenseDistribution() {
             fontSize={12} 
             tickLine={false} 
             axisLine={false} 
+            width={80}
           />
           <Tooltip 
             cursor={{ fill: 'rgba(255,255,255,0.05)' }}
             contentStyle={{ 
               backgroundColor: '#1e293b', 
               border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '8px' 
+              borderRadius: '8px',
+              fontSize: '11px'
             }}
           />
           <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
-            {expenseData.map((entry, index) => (
+            {displayData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Bar>
