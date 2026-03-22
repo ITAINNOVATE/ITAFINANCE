@@ -207,6 +207,28 @@ function ClientModal({
 
 // ─── Client Details Modal ─────────────────────────────────────────────────────
 function ClientDetailsModal({ client, onClose }: { client: Client | null; onClose: () => void }) {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (client) {
+      const fetchClientProjects = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('client_id', client.id)
+          .order('created_at', { ascending: false });
+        
+        if (!error && data) setProjects(data);
+        setLoading(false);
+      };
+      fetchClientProjects();
+    } else {
+      setProjects([]);
+    }
+  }, [client]);
+
   if (!client) return null;
 
   return (
@@ -221,15 +243,15 @@ function ClientDetailsModal({ client, onClose }: { client: Client | null; onClos
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="glass-card w-full max-w-md p-0 overflow-hidden border border-white/10"
+            className="glass-card w-full max-w-xl p-0 overflow-hidden border border-white/10"
             style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.6)' }}
           >
             <div className="h-1.5 bg-gradient-to-r from-primary to-accent" />
             
-            <div className="p-8 space-y-8">
+            <div className="p-8 space-y-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
               {/* Header Details */}
               <div className="text-center">
-                <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4 text-primary font-black text-3xl shadow-xl shadow-primary/5">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4 text-primary font-black text-2xl shadow-xl shadow-primary/5">
                   {client.name.charAt(0)}
                 </div>
                 <h3 className="text-xl font-black text-white">{client.name}</h3>
@@ -245,37 +267,76 @@ function ClientDetailsModal({ client, onClose }: { client: Client | null; onClos
                 </div>
               </div>
 
-              {/* Info Grid */}
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                      <Mail size={18} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Info Section */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] opacity-40 mb-2">Informations de contact</h4>
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                        <Mail size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">Email</p>
+                        <p className="text-xs font-bold text-white truncate">{client.email || 'N/A'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Email</p>
-                      <p className="text-sm font-bold text-white mt-0.5">{client.email || 'Non renseigné'}</p>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
+                        <Phone size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">Téléphone</p>
+                        <p className="text-xs font-bold text-white truncate">{client.phone || 'N/A'}</p>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary flex-shrink-0">
-                      <Phone size={18} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Téléphone</p>
-                      <p className="text-sm font-bold text-white mt-0.5">{client.phone || 'Non renseigné'}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
-                      <MapPin size={18} />
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent flex-shrink-0">
+                        <MapPin size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-black text-text-muted uppercase tracking-widest">Adresse</p>
+                        <p className="text-xs font-bold text-white truncate">{client.address || 'N/A'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Adresse</p>
-                      <p className="text-sm font-bold text-white mt-0.5">{client.address || 'Non renseigné'}</p>
-                    </div>
+                  </div>
+                </div>
+
+                {/* Projects Section */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] opacity-40 mb-2">Projets associés ({projects.length})</h4>
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-2">
+                    {loading ? (
+                      <div className="py-8 flex flex-col items-center justify-center gap-2 opacity-50">
+                        <Loader2 size={16} className="animate-spin text-primary" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Chargement...</span>
+                      </div>
+                    ) : projects.length > 0 ? (
+                      projects.map((proj) => (
+                        <div key={proj.id} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all group">
+                          <div className="flex justify-between items-start gap-2">
+                            <p className="text-xs font-bold text-white truncate group-hover:text-primary transition-colors">{proj.name}</p>
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase shrink-0 ${
+                              proj.status === 'Terminé' ? 'text-secondary bg-secondary/10' : 
+                              proj.status === 'Suspendu' ? 'text-red-400 bg-red-400/10' : 
+                              'text-blue-400 bg-blue-400/10'
+                            }`}>
+                              {proj.status}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mt-2">
+                            <p className="text-[10px] font-bold text-text-muted">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(proj.total_budget)}</p>
+                            <p className="text-[9px] text-text-muted/40">{proj.start_date ? new Date(proj.start_date).toLocaleDateString('fr-FR') : 'Sans date'}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-8 text-center bg-white/[0.02] border border-dashed border-white/10 rounded-2xl">
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Aucun projet</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
