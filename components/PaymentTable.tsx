@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, Download, MoreHorizontal, CreditCard, Smartphone, Banknote,
-  FileDown, Plus, X, Loader2, CheckCircle, XCircle, AlertCircle, FileText
+  FileDown, Plus, X, Loader2, CheckCircle, XCircle, AlertCircle, FileText,
+  User, Briefcase, ChevronDown, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 // import jsPDF from 'jspdf';
@@ -85,6 +86,20 @@ function PaymentModal({
   projects: Project[]; clients: Client[]; isSaving: boolean; 
 }) {
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [isProjectSelectOpen, setIsProjectSelectOpen] = useState(false);
+  const [isClientSelectOpen, setIsClientSelectOpen] = useState(false);
+  const [projectSearch, setProjectSearch] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
+
+  // Reset search when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setProjectSearch('');
+      setClientSearch('');
+      setIsProjectSelectOpen(false);
+      setIsClientSelectOpen(false);
+    }
+  }, [isOpen]);
 
   // Auto-select client when project changes
   useEffect(() => {
@@ -130,23 +145,162 @@ function PaymentModal({
 
           <form id="payment-form" onSubmit={async (e) => { e.preventDefault(); await onSave(form); }} className="p-6 space-y-4">
             
-            {/* Project Select */}
-             <div>
+            {/* Project Searchable Select */}
+             <div className="relative">
               <label className={labelClass}>Projet associé <span className="text-red-400">*</span></label>
-              <select required value={form.project_id} onChange={e => setForm(f => ({ ...f, project_id: e.target.value }))} className={inputClass}>
-                <option value="">— Sélectionner un projet —</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              {projects.length === 0 && <p className="text-[10px] text-amber-400 mt-1">Aucun projet trouvé. Veuillez en créer un d'abord.</p>}
+              
+              <div className="relative">
+                <div 
+                  className={`${inputClass} !pl-10 flex items-center cursor-pointer group hover:border-primary/40 transition-all ${!form.project_id ? 'text-text-muted/60' : 'text-white font-bold'}`}
+                  onClick={() => setIsProjectSelectOpen(!isProjectSelectOpen)}
+                >
+                  <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" size={15} />
+                  <span className="truncate">
+                    {form.project_id 
+                      ? projects.find(p => p.id === form.project_id)?.name || 'Projet inconnu' 
+                      : 'Chercher un projet...'}
+                  </span>
+                  <ChevronDown 
+                    className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted transition-transform duration-200 ${isProjectSelectOpen ? 'rotate-180 text-primary' : ''}`} 
+                    size={15} 
+                  />
+                </div>
+
+                <AnimatePresence>
+                  {isProjectSelectOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 5, scale: 0.98 }}
+                      className="absolute z-[60] left-0 right-0 mt-2 bg-[#0a0c10] border border-white/10 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl"
+                    >
+                      <div className="p-2 border-b border-white/5 bg-white/[0.02]">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={13} />
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Rechercher un projet..."
+                            value={projectSearch}
+                            onChange={(e) => setProjectSearch(e.target.value)}
+                            className="w-full bg-white/5 border border-white/5 rounded-xl py-2 pl-9 pr-4 text-xs text-white focus:outline-none focus:border-primary/50 transition-all"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="max-h-[200px] overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-white/10">
+                        {projects.filter(p => p.name.toLowerCase().includes(projectSearch.toLowerCase())).length === 0 ? (
+                          <div className="py-8 text-center">
+                            <Briefcase size={20} className="mx-auto text-text-muted/20 mb-2" />
+                            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Aucun projet trouvé</p>
+                          </div>
+                        ) : (
+                          projects
+                            .filter(p => p.name.toLowerCase().includes(projectSearch.toLowerCase()))
+                            .map(p => (
+                              <div
+                                key={p.id}
+                                onClick={() => {
+                                  setForm(f => ({ ...f, project_id: p.id }));
+                                  setIsProjectSelectOpen(false);
+                                  setProjectSearch('');
+                                }}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${form.project_id === p.id ? 'bg-primary/20 text-white border border-primary/20' : 'text-text-muted hover:bg-white/5 hover:text-white'}`}
+                              >
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black border ${form.project_id === p.id ? 'bg-primary border-primary text-white' : 'bg-white/5 border-white/5'}`}>
+                                  {p.name.charAt(0)}
+                                </div>
+                                <span className="text-xs font-bold truncate">{p.name}</span>
+                                {form.project_id === p.id && <CheckCircle2 size={14} className="ml-auto text-primary" />}
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
-            {/* Client Select */}
-            <div>
-              <label className={labelClass}>Client (Auto-rempli)</label>
-              <select disabled required value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))} className={`${inputClass} opacity-60 cursor-not-allowed`}>
-                <option value="">—</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+            {/* Client Searchable Select (Auto-filled or manual) */}
+            <div className="relative">
+              <label className={labelClass}>Client {form.project_id ? '(Auto-rempli)' : ''}</label>
+              
+              <div className="relative">
+                <div 
+                  className={`${inputClass} !pl-10 flex items-center transition-all ${form.project_id ? 'opacity-60 cursor-not-allowed bg-white/[0.02]' : 'cursor-pointer group hover:border-primary/40'} ${!form.client_id ? 'text-text-muted/60' : 'text-white font-bold'}`}
+                  onClick={() => !form.project_id && setIsClientSelectOpen(!isClientSelectOpen)}
+                >
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" size={15} />
+                  <span className="truncate">
+                    {form.client_id 
+                      ? clients.find(c => c.id === form.client_id)?.name || 'Client inconnu' 
+                      : 'Chercher un client...'}
+                  </span>
+                  {!form.project_id && (
+                    <ChevronDown 
+                      className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted transition-transform duration-200 ${isClientSelectOpen ? 'rotate-180 text-primary' : ''}`} 
+                      size={15} 
+                    />
+                  )}
+                </div>
+
+                <AnimatePresence>
+                  {isClientSelectOpen && !form.project_id && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 5, scale: 0.98 }}
+                      className="absolute z-[60] left-0 right-0 mt-2 bg-[#0a0c10] border border-white/10 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl"
+                    >
+                      <div className="p-2 border-b border-white/5 bg-white/[0.02]">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={13} />
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Rechercher un client..."
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            className="w-full bg-white/5 border border-white/5 rounded-xl py-2 pl-9 pr-4 text-xs text-white focus:outline-none focus:border-primary/50 transition-all"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="max-h-[200px] overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-white/10">
+                        {clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 ? (
+                          <div className="py-8 text-center">
+                            <User size={20} className="mx-auto text-text-muted/20 mb-2" />
+                            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Aucun client trouvé</p>
+                          </div>
+                        ) : (
+                          clients
+                            .filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+                            .map(c => (
+                              <div
+                                key={c.id}
+                                onClick={() => {
+                                  setForm(f => ({ ...f, client_id: c.id }));
+                                  setIsClientSelectOpen(false);
+                                  setClientSearch('');
+                                }}
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${form.client_id === c.id ? 'bg-primary/20 text-white border border-primary/20' : 'text-text-muted hover:bg-white/5 hover:text-white'}`}
+                              >
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black border ${form.client_id === c.id ? 'bg-primary border-primary text-white' : 'bg-white/5 border-white/5'}`}>
+                                  {c.name.charAt(0)}
+                                </div>
+                                <span className="text-xs font-bold truncate">{c.name}</span>
+                                {form.client_id === c.id && <CheckCircle2 size={14} className="ml-auto text-primary" />}
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {/* Amount & Date */}
