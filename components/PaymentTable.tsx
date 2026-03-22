@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, Download, MoreHorizontal, CreditCard, Smartphone, Banknote,
   FileDown, Plus, X, Loader2, CheckCircle, XCircle, AlertCircle, FileText,
-  User, Briefcase, ChevronDown, CheckCircle2
+  User, Briefcase, ChevronDown, CheckCircle2, Ticket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 // import jsPDF from 'jspdf';
@@ -17,9 +17,12 @@ interface Payment {
   project_id: string | null;
   client_id: string | null;
   amount: number;
-  payment_method: 'Espèces' | 'Mobile Money' | 'Virement';
+  payment_method: 'Espèces' | 'Mobile Money' | 'Virement' | 'Chèque';
   payment_date: string;
   notes: string | null;
+  transaction_id?: string;
+  bank_name?: string;
+  reference_number?: string;
   created_at: string;
   // Joined stats
   clients?: { name: string } | null;
@@ -33,9 +36,12 @@ type FormData = {
   project_id: string;
   client_id: string;
   amount: string;
-  payment_method: 'Espèces' | 'Mobile Money' | 'Virement';
+  payment_method: 'Espèces' | 'Mobile Money' | 'Virement' | 'Chèque';
   payment_date: string;
   notes: string;
+  transaction_id: string;
+  bank_name: string;
+  reference_number: string;
 };
 
 const emptyForm: FormData = {
@@ -44,7 +50,10 @@ const emptyForm: FormData = {
   amount: '',
   payment_method: 'Mobile Money',
   payment_date: new Date().toISOString().split('T')[0],
-  notes: 'Avance sur projet'
+  notes: 'Avance sur projet',
+  transaction_id: '',
+  bank_name: '',
+  reference_number: ''
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -294,21 +303,52 @@ function PaymentModal({
               </div>
 
               {/* Method */}
-              <div>
-                <label className={labelClass}>Méthode de paiement</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['Espèces', 'Mobile Money', 'Virement'] as const).map(m => {
-                    const isSel = form.payment_method === m;
-                    return (
-                      <button
-                        key={m} type="button" onClick={() => setForm(f => ({ ...f, payment_method: m }))}
-                        className={`py-2 px-1 rounded-xl border text-[11px] font-bold transition-all ${isSel ? 'border-primary/50 bg-primary/15 text-white' : 'border-white/10 bg-white/[0.03] text-text-muted hover:border-white/20'}`}
-                      >
-                        {m}
-                      </button>
-                    );
-                  })}
+              <div className="space-y-4">
+                <div>
+                  <label className={labelClass}>Méthode de paiement</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {(['Espèces', 'Mobile Money', 'Virement', 'Chèque'] as const).map(m => {
+                      const isSel = form.payment_method === m;
+                      return (
+                        <button
+                          key={m} type="button" 
+                          onClick={() => setForm(f => ({ ...f, payment_method: m }))}
+                          className={`py-2 px-1 rounded-xl border text-[10px] font-bold transition-all ${isSel ? 'border-primary/50 bg-primary/15 text-white' : 'border-white/10 bg-white/[0.03] text-text-muted hover:border-white/20'}`}
+                        >
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* Conditional Fields */}
+                <AnimatePresence mode="wait">
+                  {form.payment_method === 'Mobile Money' && (
+                    <motion.div 
+                      key="mm" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                    >
+                      <label className={labelClass}>ID Transaction <span className="text-red-400">*</span></label>
+                      <input required type="text" value={form.transaction_id} onChange={e => setForm(f => ({ ...f, transaction_id: e.target.value }))} placeholder="Ex: TX123456789" className={inputClass} />
+                    </motion.div>
+                  )}
+
+                  {(form.payment_method === 'Virement' || form.payment_method === 'Chèque') && (
+                    <motion.div 
+                      key="bank" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <div>
+                        <label className={labelClass}>Banque <span className="text-red-400">*</span></label>
+                        <input required type="text" value={form.bank_name} onChange={e => setForm(f => ({ ...f, bank_name: e.target.value }))} placeholder="Ex: BOA, UBA..." className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>{form.payment_method === 'Virement' ? 'ID Virement' : 'N° Chèque'} <span className="text-red-400">*</span></label>
+                        <input required type="text" value={form.reference_number} onChange={e => setForm(f => ({ ...f, reference_number: e.target.value }))} placeholder="Ex: 0012345" className={inputClass} />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Notes */}
@@ -337,6 +377,33 @@ function PaymentModal({
                   <span className="text-text-muted font-bold opacity-60 uppercase tracking-widest">Projet</span>
                   <span className="text-white font-black">{projects.find(p => p.id === form.project_id)?.name || '—'}</span>
                 </div>
+                
+                {/* Transaction Specifics in Review */}
+                <div className="pt-2 space-y-2 border-t border-white/5">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="text-text-muted font-bold opacity-60 uppercase tracking-widest">Méthode</span>
+                    <span className="text-white font-black">{form.payment_method}</span>
+                  </div>
+                  {form.transaction_id && (
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-text-muted font-bold opacity-60 uppercase tracking-widest">ID Trans.</span>
+                      <span className="text-white font-black">{form.transaction_id}</span>
+                    </div>
+                  )}
+                  {form.bank_name && (
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-text-muted font-bold opacity-60 uppercase tracking-widest">Banque</span>
+                      <span className="text-white font-black">{form.bank_name}</span>
+                    </div>
+                  )}
+                  {form.reference_number && (
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-text-muted font-bold opacity-60 uppercase tracking-widest">Réf/N°</span>
+                      <span className="text-white font-black">{form.reference_number}</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="pt-4 border-t border-white/5 flex justify-between items-center">
                   <span className="text-xs text-text-muted font-bold opacity-60 uppercase tracking-widest">Montant à régler</span>
                   <span className="text-xl font-black text-secondary">{formatCFA(parseFloat(form.amount) || 0)}</span>
@@ -423,13 +490,26 @@ export default function PaymentTable() {
   const handleSave = async (form: FormData) => {
     setIsSaving(true);
     try {
+      const extraInfo = [];
+      if (form.payment_method === 'Mobile Money' && form.transaction_id) 
+        extraInfo.push(`ID Trans: ${form.transaction_id}`);
+      if (form.payment_method === 'Virement' || form.payment_method === 'Chèque') {
+        if (form.bank_name) extraInfo.push(`Banque: ${form.bank_name}`);
+        if (form.reference_number) 
+          extraInfo.push(form.payment_method === 'Virement' ? `ID Vir: ${form.reference_number}` : `N° Chèque: ${form.reference_number}`);
+      }
+      
+      const formattedNotes = extraInfo.length > 0 
+        ? `[${extraInfo.join(' | ')}]${form.notes ? ' ' + form.notes : ''}`
+        : form.notes;
+
       const payload = {
         project_id: form.project_id || null,
         client_id: form.client_id || null,
         amount: parseFloat(form.amount) || 0,
         payment_method: form.payment_method,
         payment_date: form.payment_date || new Date().toISOString(),
-        notes: form.notes || null,
+        notes: formattedNotes || null,
       };
 
       const { error } = await supabase.from('payments').insert([payload]);
@@ -509,6 +589,16 @@ export default function PaymentTable() {
       doc.setDrawColor(230);
       doc.line(20, 135, 190, 135);
       
+      if (p.notes && p.notes.startsWith('[')) {
+        const match = p.notes.match(/\[(.*?)\]/);
+        if (match) {
+          const details = match[1];
+          doc.setFontSize(9);
+          doc.setTextColor(120);
+          doc.text(`Réf. Transaction: ${details}`, 25, 128);
+        }
+      }
+
       // Total amount
       doc.setFontSize(14);
       doc.setTextColor(80);
@@ -618,6 +708,7 @@ export default function PaymentTable() {
                         {p.payment_method === 'Virement' && <CreditCard size={12} className="text-blue-400" />}
                         {p.payment_method === 'Mobile Money' && <Smartphone size={12} className="text-yellow-400" />}
                         {p.payment_method === 'Espèces' && <Banknote size={12} className="text-green-400" />}
+                        {p.payment_method === 'Chèque' && <Ticket size={12} className="text-purple-400" />}
                         {p.payment_method}
                       </div>
                     </td>
