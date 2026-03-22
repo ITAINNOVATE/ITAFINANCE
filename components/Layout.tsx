@@ -3,12 +3,23 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../lib/auth-context';
+import { Loader2 } from 'lucide-react';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading } = useAuth();
   
+  // Handling redirection
+  React.useEffect(() => {
+    if (!loading && !user && pathname !== '/login') {
+      router.push('/login');
+    }
+  }, [user, loading, pathname, router]);
+
   // Mapping paths to titles
   const titles: Record<string, string> = {
     '/': 'Tableau de bord',
@@ -18,6 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     '/echeanciers': 'Échéanciers de Paiement',
     '/depenses': 'Gestion des Dépenses',
     '/rapports': 'Rapports Financiers',
+    '/admin': 'Administration Système',
     '/login': 'Connexion',
   };
 
@@ -25,6 +37,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/login';
 
   if (isLoginPage) return <>{children}</>;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background text-text overflow-hidden">

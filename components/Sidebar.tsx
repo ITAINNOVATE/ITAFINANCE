@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '../lib/auth-context';
 import { 
   BarChart3, 
   Users, 
@@ -26,18 +27,27 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const menuItems = [
-  { name: 'Tableau de bord', icon: BarChart3, path: '/' },
-  { name: 'Clients', icon: Users, path: '/clients' },
-  { name: 'Projets', icon: Briefcase, path: '/projets' },
-  { name: 'Paiements', icon: CreditCard, path: '/paiements' },
-  { name: 'Échéanciers', icon: Calendar, path: '/echeanciers' },
-  { name: 'Dépenses', icon: TrendingDown, path: '/depenses' },
-  { name: 'Rapports', icon: FileText, path: '/rapports' },
+  { id: 'dashboard', name: 'Tableau de bord', icon: BarChart3, path: '/' },
+  { id: 'clients', name: 'Clients', icon: Users, path: '/clients' },
+  { id: 'projets', name: 'Projets', icon: Briefcase, path: '/projets' },
+  { id: 'paiements', name: 'Paiements', icon: CreditCard, path: '/paiements' },
+  { id: 'echeanciers', name: 'Échéanciers', icon: Calendar, path: '/echeanciers' },
+  { id: 'depenses', name: 'Dépenses', icon: TrendingDown, path: '/depenses' },
+  { id: 'rapports', name: 'Rapports', icon: FileText, path: '/rapports' },
+  { id: 'admin', name: 'Administration', icon: ShieldCheck, path: '/admin' },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const { profile, signOut } = useAuth();
+
+  const filteredItems = menuItems.filter(item => {
+    if (item.id === 'dashboard') return true;
+    if (!profile) return false;
+    if (profile.role === 'admin') return true;
+    return profile.permissions?.includes(item.id);
+  });
 
   return (
     <motion.div 
@@ -67,7 +77,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-        {menuItems.map((item) => {
+        {filteredItems.map((item) => {
           const isActive = pathname === item.path;
           const Icon = item.icon;
 
@@ -103,23 +113,28 @@ export default function Sidebar() {
       <div className="p-6 border-t border-white/5 space-y-4">
         {!isCollapsed && (
           <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-white/5 border border-white/5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold shadow-inner">
-              AD
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs text-white font-bold shadow-inner">
+              {profile?.email?.substring(0, 2).toUpperCase() || 'IT'}
             </div>
             <div className="flex flex-col overflow-hidden leading-tight">
-              <span className="text-sm font-bold text-white truncate">Admin ITA</span>
+              <span className="text-[11px] font-bold text-white truncate">{profile?.email || 'Utilisateur'}</span>
               <div className="flex items-center gap-1">
-                <ShieldCheck size={10} className="text-secondary" />
-                <span className="text-[10px] text-text-muted font-bold truncate">Vérifié</span>
+                <ShieldCheck size={10} className={profile?.role === 'admin' ? "text-secondary" : "text-text-muted"} />
+                <span className="text-[9px] text-text-muted font-bold truncate uppercase tracking-tighter">
+                  {profile?.role === 'admin' ? 'Administrateur' : 'Collaborateur'}
+                </span>
               </div>
             </div>
           </div>
         )}
         
-        <button className={cn(
-          "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-red-400 hover:bg-red-400/10 transition-all font-bold text-sm",
-          isCollapsed ? "justify-center" : ""
-        )}>
+        <button 
+          onClick={() => signOut()}
+          className={cn(
+            "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-red-500/80 hover:bg-red-500/10 hover:text-red-500 transition-all font-bold text-sm",
+            isCollapsed ? "justify-center" : ""
+          )}
+        >
           <LogOut size={18} />
           {!isCollapsed && <span className="">Déconnexion</span>}
         </button>

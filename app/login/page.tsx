@@ -5,17 +5,32 @@ import { motion } from 'framer-motion';
 import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { supabase } from '../../lib/supabase';
+
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('groupita25@gmail.com');
+  const [password, setPassword] = useState('Admin123');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulation
-    setTimeout(() => {
+    setError(null);
+    
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (authError) throw authError;
       router.push('/');
-    }, 1500);
+    } catch (err: any) {
+      setError(err.message === 'Invalid login credentials' ? 'Identifiants invalides' : err.message);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -54,6 +69,11 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
+          {error && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-[10px] font-bold text-center uppercase tracking-widest">
+              {error}
+            </motion.div>
+          )}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Email professionnel</label>
             <div className="relative group">
@@ -61,7 +81,8 @@ export default function LoginPage() {
               <input 
                 type="email" 
                 required
-                defaultValue="compta@itainnovate.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all text-sm text-white placeholder:text-text-muted/40"
                 placeholder="votre@email.com"
               />
@@ -75,7 +96,8 @@ export default function LoginPage() {
               <input 
                 type="password" 
                 required
-                defaultValue="password123"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-white/[0.03] border border-white/5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all text-sm text-white placeholder:text-text-muted/40"
                 placeholder="••••••••"
               />

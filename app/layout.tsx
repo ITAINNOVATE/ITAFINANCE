@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   description: "Modern financial management for ITA INNOVATE",
 };
 
+import { AuthProvider } from "../lib/auth-context";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${inter.variable} ${outfit.variable}`}>
       <body className={inter.className}>
-        <Layout>{children}</Layout>
+        <AuthProvider>
+          <Layout>{children}</Layout>
+        </AuthProvider>
       </body>
     </html>
   );
