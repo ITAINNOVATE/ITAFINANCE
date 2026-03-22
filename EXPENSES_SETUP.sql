@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid')),
     planned_date DATE NOT NULL DEFAULT CURRENT_DATE,
     payment_date DATE,
-    project_id UUID REFERENCES public.projets(id) ON DELETE SET NULL,
+    project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
     reference TEXT,
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),

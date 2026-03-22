@@ -44,7 +44,7 @@ export default function ExpenseTable() {
     setLoading(true);
     const { data, error } = await supabase
       .from('expenses')
-      .select('*, projets(nom)')
+      .select('*, projects(name)')
       .order('planned_date', { ascending: false });
 
     if (!error) {
@@ -210,9 +210,9 @@ export default function ExpenseTable() {
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase">
                           <Tag size={10} className="text-primary" /> {d.category}
                         </span>
-                        {d.projets && (
+                        {d.projects && (
                           <span className="flex items-center gap-1.5 text-[9px] font-black text-secondary uppercase tracking-tighter">
-                            <Briefcase size={10} /> {d.projets.nom}
+                            <Briefcase size={10} /> {d.projects.name}
                           </span>
                         )}
                       </div>

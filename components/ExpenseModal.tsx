@@ -54,9 +54,9 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, expense }: Ex
 
   const fetchProjects = async () => {
     const { data } = await supabase
-      .from('projets')
-      .select('id, nom, clients(nom)')
-      .order('nom', { ascending: true });
+      .from('projects')
+      .select('id, nom:name, clients(name)')
+      .order('name', { ascending: true });
     
     if (data) setProjects(data);
   };
@@ -176,7 +176,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, expense }: Ex
                   <option value="" className="bg-background text-white">Aucun projet associé</option>
                   {projects.map(p => (
                     <option key={p.id} value={p.id} className="bg-background text-white">
-                      {p.clients?.nom ? `${p.clients.nom} - ` : ''}{p.nom}
+                      {p.clients?.name ? `${p.clients.name} - ` : ''}{p.nom}
                     </option>
                   ))}
                 </select>
