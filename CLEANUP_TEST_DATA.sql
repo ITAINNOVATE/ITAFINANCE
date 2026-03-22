@@ -6,7 +6,7 @@ DELETE FROM public.payments;
 DELETE FROM public.expenses;
 
 -- Suppression des projets
-DELETE FROM public.projets;
+DELETE FROM public.projects;
 
 -- Suppression des clients
 DELETE FROM public.clients;
