@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase';
 interface Client {
   id: string;
   name: string;
+  code: string | null;
   type: 'Particulier' | 'Entreprise';
   email: string | null;
   phone: string | null;
@@ -20,7 +21,7 @@ interface Client {
   created_at: string;
 }
 
-type FormData = Omit<Client, 'id' | 'created_at'>;
+type FormData = Omit<Client, 'id' | 'created_at' | 'code'>;
 
 const emptyForm: FormData = {
   name: '',
@@ -259,9 +260,16 @@ function ClientCard({ client, onEdit, onDelete, index }: { client: Client; onEdi
           </div>
           <div className="min-w-0">
             <p className="font-bold text-white truncate">{client.name}</p>
-            <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black mt-0.5 ${client.type === 'Entreprise' ? 'text-blue-400 bg-blue-400/10' : 'text-purple-400 bg-purple-400/10'}`}>
-              {client.type}
-            </span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${client.type === 'Entreprise' ? 'text-blue-400 bg-blue-400/10' : 'text-purple-400 bg-purple-400/10'}`}>
+                {client.type}
+              </span>
+              {client.code && (
+                <span className="text-[9px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  {client.code}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-1.5 flex-shrink-0">
@@ -320,6 +328,7 @@ export default function ClientTable() {
   // ── Filtered & Paginated ─────────────────────────────────────────────────────
   const filtered = clients.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.code?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
       (c.email?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
       (c.phone ?? '').includes(searchTerm);
     const matchType = filterType === 'Tous' || c.type === filterType;
@@ -348,9 +357,25 @@ export default function ClientTable() {
         if (error) throw error;
         showToast(`Client "${formData.name}" modifié avec succès.`, 'success');
       } else {
-        const { error } = await supabase.from('clients').insert([payload]);
+        // Generate Unique Code CLT-ITA/YYYY/0001
+        const year = new Date().getFullYear();
+        const startOfYear = `${year}-01-01T00:00:00Z`;
+        const endOfYear = `${year}-12-31T23:59:59Z`;
+
+        const { count, error: countError } = await supabase
+          .from('clients')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', startOfYear)
+          .lte('created_at', endOfYear);
+
+        if (countError) throw countError;
+
+        const nextNumber = (count || 0) + 1;
+        const generatedCode = `CLT-ITA/${year}/${nextNumber.toString().padStart(4, '0')}`;
+        
+        const { error } = await supabase.from('clients').insert([{ ...payload, code: generatedCode }]);
         if (error) throw error;
-        showToast(`Client "${formData.name}" créé avec succès !`, 'success');
+        showToast(`Client "${formData.name}" créé avec succès ! Code: ${generatedCode}`, 'success');
       }
       setIsModalOpen(false);
       setEditingClient(null);
@@ -533,7 +558,14 @@ export default function ClientTable() {
                             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-sm border border-white/5 flex-shrink-0">
                               {client.name.charAt(0)}
                             </div>
-                            <p className="font-bold text-white truncate max-w-[160px]">{client.name}</p>
+                            <div>
+                               <p className="font-bold text-white truncate max-w-[160px]">{client.name}</p>
+                               {client.code && (
+                                 <p className="text-[9px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-block mt-0.5 tracking-tighter uppercase whitespace-nowrap">
+                                   {client.code}
+                                 </p>
+                               )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-5 py-4">
