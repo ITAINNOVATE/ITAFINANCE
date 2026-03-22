@@ -11,6 +11,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+interface Schedule {
+  id: string;
+  project_id: string;
+  due_date: string;
+  amount: number;
+  status: 'Payé' | 'En attente' | 'En retard';
+}
+
 interface Project {
   id: string;
   client_id: string | null;
@@ -23,6 +31,7 @@ interface Project {
   created_at: string;
   // Joined
   clients?: { name: string } | null;
+  schedules?: Schedule[];
   // Computed
   total_paid?: number;
 }
@@ -40,6 +49,7 @@ type FormData = {
   start_date: string;
   end_date: string;
   status: 'En cours' | 'Terminé' | 'Suspendu';
+  installments: { due_date: string; amount: string }[];
 };
 
 const emptyForm: FormData = {
@@ -50,6 +60,7 @@ const emptyForm: FormData = {
   start_date: '',
   end_date: '',
   status: 'En cours',
+  installments: [],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -126,6 +137,10 @@ function ProjectModal({
         start_date: initialData.start_date ?? '',
         end_date: initialData.end_date ?? '',
         status: initialData.status,
+        installments: (initialData.schedules ?? []).map(s => ({
+          due_date: s.due_date,
+          amount: String(s.amount),
+        })),
       });
     } else {
       setForm(emptyForm);
@@ -332,6 +347,92 @@ function ProjectModal({
                     })}
                   </div>
                 </div>
+
+                {/* Installments (Échéancier) */}
+                <div className="pt-4 border-t border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">Échéancier de paiement</h4>
+                      <p className="text-[10px] text-text-muted mt-1">Définissez les tranches de paiement attendues</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({
+                        ...f,
+                        installments: [...f.installments, { due_date: '', amount: '' }]
+                      }))}
+                      className="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all flex items-center gap-1.5 text-[10px] font-black uppercase"
+                    >
+                      <Plus size={14} /> Ajouter
+                    </button>
+                  </div>
+
+                  {form.installments.length === 0 ? (
+                    <div className="py-6 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center text-center">
+                      <Calendar size={20} className="text-white/10 mb-2" />
+                      <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Aucune échéance</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {form.installments.map((inst, idx) => (
+                        <div key={idx} className="flex items-end gap-3 p-3 bg-white/[0.02] border border-white/5 rounded-2xl group animate-in slide-in-from-left-2 duration-200">
+                          <div className="flex-1 space-y-1.5">
+                            <label className="text-[9px] font-black text-text-muted uppercase tracking-wider ml-0.5">Date</label>
+                            <input
+                              required
+                              type="date"
+                              value={inst.due_date}
+                              onChange={e => {
+                                const newInst = [...form.installments];
+                                newInst[idx].due_date = e.target.value;
+                                setForm(f => ({ ...f, installments: newInst }));
+                              }}
+                              className={`${inputClass} !py-2 !px-3 [color-scheme:dark]`}
+                            />
+                          </div>
+                          <div className="flex-[1.2] space-y-1.5">
+                            <label className="text-[9px] font-black text-text-muted uppercase tracking-wider ml-0.5">Montant (FCFA)</label>
+                            <input
+                              required
+                              type="number"
+                              min="0"
+                              placeholder="Montant"
+                              value={inst.amount}
+                              onChange={e => {
+                                const newInst = [...form.installments];
+                                newInst[idx].amount = e.target.value;
+                                setForm(f => ({ ...f, installments: newInst }));
+                              }}
+                              className={`${inputClass} !py-2 !px-3`}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newInst = form.installments.filter((_, i) => i !== idx);
+                              setForm(f => ({ ...f, installments: newInst }));
+                            }}
+                            className="p-2.5 mb-0.5 rounded-xl bg-red-400/5 hover:bg-red-400/15 text-red-400 transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      {/* Sum Verification */}
+                      <div className="flex justify-between items-center px-2 py-1">
+                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Total échéancier :</span>
+                        <span className={`text-xs font-black ${
+                          form.installments.reduce((sum, inst) => sum + (parseFloat(inst.amount) || 0), 0) === (parseFloat(form.total_budget) || 0)
+                            ? 'text-secondary'
+                            : 'text-amber-400'
+                        }`}>
+                          {formatCFA(form.installments.reduce((sum, inst) => sum + (parseFloat(inst.amount) || 0), 0))}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -531,7 +632,7 @@ export default function ProjectList() {
     setLoading(true);
     const { data, error } = await supabase
       .from('projects')
-      .select('*, clients(name)')
+      .select('*, clients(name), schedules(*)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -601,12 +702,39 @@ export default function ProjectList() {
       };
 
       if (editingProject) {
-        const { error } = await supabase.from('projects').update(payload).eq('id', editingProject.id);
-        if (error) throw error;
+        const { error: projectError } = await supabase.from('projects').update(payload).eq('id', editingProject.id);
+        if (projectError) throw projectError;
+        
+        // Update schedules: Delete + Re-insert
+        await supabase.from('schedules').delete().eq('project_id', editingProject.id);
+        if (form.installments.length > 0) {
+          const schedulePayload = form.installments.map(inst => ({
+            project_id: editingProject.id,
+            due_date: inst.due_date,
+            amount: parseFloat(inst.amount) || 0,
+            status: 'En attente'
+          }));
+          const { error: scheduleError } = await supabase.from('schedules').insert(schedulePayload);
+          if (scheduleError) throw scheduleError;
+        }
+
         showToast(`Projet "${form.name}" modifié.`, 'success');
       } else {
-        const { error } = await supabase.from('projects').insert([payload]);
-        if (error) throw error;
+        const { data: newProject, error: projectError } = await supabase.from('projects').insert([payload]).select().single();
+        if (projectError) throw projectError;
+        
+        // Insert schedules
+        if (newProject && form.installments.length > 0) {
+          const schedulePayload = form.installments.map(inst => ({
+            project_id: newProject.id,
+            due_date: inst.due_date,
+            amount: parseFloat(inst.amount) || 0,
+            status: 'En attente'
+          }));
+          const { error: scheduleError } = await supabase.from('schedules').insert(schedulePayload);
+          if (scheduleError) throw scheduleError;
+        }
+
         showToast(`Projet "${form.name}" créé !`, 'success');
       }
       setIsModalOpen(false);
