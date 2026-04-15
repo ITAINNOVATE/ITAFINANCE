@@ -7,7 +7,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase environment variables are missing!');
 }
 
-export const PLATFORM_ID = process.env.NEXT_PUBLIC_VITE_PLATFORM_ID || process.env.NEXT_PUBLIC_PLATFORM_ID;
+export const PLATFORM_ID = (process.env.NEXT_PUBLIC_VITE_PLATFORM_ID || process.env.NEXT_PUBLIC_PLATFORM_ID || '') as string;
 
 export const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
 
