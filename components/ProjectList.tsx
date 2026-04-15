@@ -8,7 +8,8 @@ import {
   ArrowRight, PauseCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { supabase, PLATFORM_ID } from '../lib/supabase';
+import { useProducts } from '../lib/product-context';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Schedule {
@@ -612,11 +613,14 @@ function ProjectCard({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProjectList() {
+  const [activeTab, setActiveTab] = useState<'projects' | 'catalogue'>('projects');
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('Tous');
+
+  const { products, loading: productsLoading } = useProducts();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -633,6 +637,7 @@ export default function ProjectList() {
     const { data, error } = await supabase
       .from('projects')
       .select('*, clients(name), schedules(*)')
+      .eq('platform_id', PLATFORM_ID)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -644,7 +649,8 @@ export default function ProjectList() {
     // Fetch total_paid per project from payments
     const { data: payments } = await supabase
       .from('payments')
-      .select('project_id, amount');
+      .select('project_id, amount')
+      .eq('platform_id', PLATFORM_ID);
 
     const paidMap: Record<string, number> = {};
     (payments ?? []).forEach((p: { project_id: string; amount: number }) => {
@@ -661,7 +667,11 @@ export default function ProjectList() {
   }, []);
 
   const fetchClients = useCallback(async () => {
-    const { data } = await supabase.from('clients').select('id, name').order('name');
+    const { data } = await supabase
+      .from('clients')
+      .select('id, name')
+      .eq('platform_id', PLATFORM_ID)
+      .order('name');
     setClients((data ?? []) as Client[]);
   }, []);
 
@@ -699,6 +709,7 @@ export default function ProjectList() {
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         status: form.status,
+        platform_id: PLATFORM_ID
       };
 
       if (editingProject) {
@@ -752,7 +763,11 @@ export default function ProjectList() {
     if (!projectToDelete) return;
     setIsDeleting(true);
     try {
-      const { error } = await supabase.from('projects').delete().eq('id', projectToDelete.id);
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectToDelete.id)
+        .eq('platform_id', PLATFORM_ID);
       if (error) throw error;
       showToast(`Projet "${projectToDelete.name}" supprimé.`, 'success');
       setProjectToDelete(null);
@@ -769,6 +784,31 @@ export default function ProjectList() {
 
   return (
     <div className="space-y-5">
+      {/* Tab Switcher */}
+      <div className="flex gap-2 p-1 bg-white/5 rounded-2xl w-fit">
+        <button
+          onClick={() => setActiveTab('projects')}
+          className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'projects' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-text-muted hover:text-white'}`}
+        >
+          Mes Projets
+        </button>
+        <button
+          onClick={() => setActiveTab('catalogue')}
+          className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'catalogue' ? 'bg-secondary text-white shadow-lg shadow-secondary/20' : 'text-text-muted hover:text-white'}`}
+        >
+          Catalogue Produits
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {activeTab === 'projects' ? (
+          <motion.div
+            key="projects"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-5"
+          >
       {/* Toast */}
       <AnimatePresence>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -881,6 +921,80 @@ export default function ProjectList() {
           </AnimatePresence>
         </div>
       )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="catalogue"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-black text-white">Catalogue des Produits</h2>
+                <p className="text-text-muted text-sm mt-1">Sélectionnez des articles pour vos projets ou commandes.</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Platform ID</span>
+                <p className="text-xs font-mono text-primary font-bold">{PLATFORM_ID.substring(0, 8)}...</p>
+              </div>
+            </div>
+
+            {productsLoading ? (
+              <div className="glass-card py-20 flex flex-col items-center gap-4">
+                <Loader2 size={32} className="animate-spin text-primary" />
+                <p className="text-text-muted text-sm font-bold">Chargement du catalogue...</p>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="glass-card py-24 flex flex-col items-center gap-6 text-center">
+                <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center border border-white/5 shadow-inner">
+                  <ArrowRight size={32} className="text-text-muted/20" />
+                </div>
+                <div className="max-w-xs">
+                  <h3 className="text-lg font-black text-white">Catalogue vide</h3>
+                  <p className="text-sm text-text-muted mt-2">Aucun produit n'est encore référencé pour cette plateforme dans ITA-CORE.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map((product) => (
+                  <motion.div
+                    key={product.id}
+                    layoutId={product.id}
+                    className="glass-card p-6 flex flex-col group hover:border-primary/30 transition-all cursor-pointer shadow-xl"
+                  >
+                    <div className="h-40 -mx-6 -mt-6 mb-6 bg-gradient-to-br from-white/[0.03] to-white/[0.01] rounded-t-2xl flex items-center justify-center border-b border-white/5 overflow-hidden relative">
+                      {product.image_url ? (
+                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 opacity-20">
+                          <Briefcase size={40} className="text-text-muted" />
+                          <span className="text-[10px] uppercase font-black tracking-widest">Image non disponible</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-primary mb-2 block">{product.category || 'Service IT'}</span>
+                      <h3 className="text-lg font-black text-white mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
+                      <p className="text-xs text-text-muted line-clamp-2 min-h-[2.5rem]">{product.description || 'Solution sur mesure pour votre infrastructure.'}</p>
+                    </div>
+                    <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">Prix HT</span>
+                        <span className="text-lg font-black text-white tracking-tight">{product.price?.toLocaleString('fr-FR')} FCFA</span>
+                      </div>
+                      <button className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-text-muted hover:text-white hover:bg-primary hover:border-primary transition-all shadow-lg group-hover:shadow-primary/20">
+                        <Plus size={18} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

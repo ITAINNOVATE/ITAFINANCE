@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, Users, Loader2, CheckCircle2, XCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { supabase, PLATFORM_ID } from '../lib/supabase';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Client {
@@ -218,6 +218,7 @@ function ClientDetailsModal({ client, onClose }: { client: Client | null; onClos
           .from('projects')
           .select('*')
           .eq('client_id', client.id)
+          .eq('platform_id', PLATFORM_ID)
           .order('created_at', { ascending: false });
         
         if (!error && data) setProjects(data);
@@ -471,6 +472,7 @@ export default function ClientTable() {
     const { data, error } = await supabase
       .from('clients')
       .select('*')
+      .eq('platform_id', PLATFORM_ID)
       .order('created_at', { ascending: false });
     if (!error && data) setClients(data as Client[]);
     else if (error) showToast('Erreur de chargement des clients.', 'error');
@@ -504,6 +506,7 @@ export default function ClientTable() {
         email: formData.email || null,
         phone: formData.phone || null,
         address: formData.address || null,
+        platform_id: PLATFORM_ID,
       };
 
       if (editingClient) {
@@ -519,6 +522,7 @@ export default function ClientTable() {
         const { count, error: countError } = await supabase
           .from('clients')
           .select('*', { count: 'exact', head: true })
+          .eq('platform_id', PLATFORM_ID)
           .gte('created_at', startOfYear)
           .lte('created_at', endOfYear);
 
@@ -546,7 +550,11 @@ export default function ClientTable() {
     if (!clientToDelete) return;
     setIsDeleting(true);
     try {
-      const { error } = await supabase.from('clients').delete().eq('id', clientToDelete.id);
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientToDelete.id)
+        .eq('platform_id', PLATFORM_ID);
       if (error) throw error;
       showToast(`Client "${clientToDelete.name}" supprimé.`, 'success');
       setClientToDelete(null);

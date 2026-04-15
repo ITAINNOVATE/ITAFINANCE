@@ -11,7 +11,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { supabase } from '../../lib/supabase';
+import { supabase, PLATFORM_ID } from '../../lib/supabase';
 import { 
   format, 
   startOfMonth, 
@@ -62,8 +62,15 @@ export default function RapportsPage() {
       }
 
       // Fetch all required data
-      const { data: payments } = await supabase.from('payments').select('*');
-      const { data: expenses } = await supabase.from('expenses').select('*').eq('status', 'paid');
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('platform_id', PLATFORM_ID);
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('status', 'paid')
+        .eq('platform_id', PLATFORM_ID);
 
       const currentPayments = (payments || []).filter(p => isWithinInterval(parseISO(p.payment_date), { start, end }));
       const currentExpenses = (expenses || []).filter(e => e.payment_date && isWithinInterval(parseISO(e.payment_date), { start, end }));

@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "../lib/auth-context";
+import { ProductProvider } from "../lib/product-context";
 
 export default function RootLayout({
   children,
@@ -29,7 +30,9 @@ export default function RootLayout({
     <html lang="fr" className={`${inter.variable} ${outfit.variable}`}>
       <body className={inter.className}>
         <AuthProvider>
-          <Layout>{children}</Layout>
+          <ProductProvider>
+            <Layout>{children}</Layout>
+          </ProductProvider>
         </AuthProvider>
       </body>
     </html>

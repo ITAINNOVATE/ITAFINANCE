@@ -14,7 +14,7 @@ import {
 import StatCard from '../components/StatCard';
 import { RevenueChart, ExpenseDistribution } from '../components/Charts';
 import { motion } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { supabase, PLATFORM_ID } from '../lib/supabase';
 import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -49,18 +49,21 @@ export default function Home() {
       const { data: payments } = await supabase
         .from('payments')
         .select('*')
+        .eq('platform_id', PLATFORM_ID)
         .gte('payment_date', sixMonthsAgo.toISOString());
 
       // 2. Fetch Expenses
       const { data: expenses } = await supabase
         .from('expenses')
         .select('*')
+        .eq('platform_id', PLATFORM_ID)
         .or(`planned_date.gte.${sixMonthsAgo.toISOString()},payment_date.gte.${sixMonthsAgo.toISOString()}`);
 
       // 3. Fetch Projects
       const { data: projects } = await supabase
         .from('projects')
         .select('*, clients(name)')
+        .eq('platform_id', PLATFORM_ID)
         .order('created_at', { ascending: false });
 
       // Calculate Stats

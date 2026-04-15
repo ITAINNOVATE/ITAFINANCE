@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, PLATFORM_ID } from '../lib/supabase';
 import { 
   X, Save, Calendar, Tag, DollarSign, FileText, 
   Briefcase, Loader2, CheckCircle2, AlertCircle 
@@ -56,6 +56,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, expense }: Ex
     const { data } = await supabase
       .from('projects')
       .select('id, nom:name, clients(name)')
+      .eq('platform_id', PLATFORM_ID)
       .order('name', { ascending: true });
     
     if (data) setProjects(data);
@@ -69,12 +70,17 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, expense }: Ex
       ...formData,
       amount: parseFloat(formData.amount),
       project_id: formData.project_id || null,
-      payment_date: formData.status === 'paid' ? (formData.payment_date || new Date().toISOString().split('T')[0]) : null
+      payment_date: formData.status === 'paid' ? (formData.payment_date || new Date().toISOString().split('T')[0]) : null,
+      platform_id: PLATFORM_ID
     };
 
     let error;
     if (expense?.id) {
-      const { error: err } = await supabase.from('expenses').update(payload).eq('id', expense.id);
+      const { error: err } = await supabase
+        .from('expenses')
+        .update(payload)
+        .eq('id', expense.id)
+        .eq('platform_id', PLATFORM_ID);
       error = err;
     } else {
       const { error: err } = await supabase.from('expenses').insert([payload]);

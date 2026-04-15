@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, PLATFORM_ID } from '../lib/supabase';
 import { 
   TrendingDown, 
   Plus, 
@@ -45,6 +45,7 @@ export default function ExpenseTable() {
     const { data, error } = await supabase
       .from('expenses')
       .select('*, projects(name)')
+      .eq('platform_id', PLATFORM_ID)
       .order('planned_date', { ascending: false });
 
     if (!error) {
@@ -80,14 +81,19 @@ export default function ExpenseTable() {
         status: 'paid', 
         payment_date: new Date().toISOString().split('T')[0] 
       })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('platform_id', PLATFORM_ID);
     
     if (!error) fetchExpenses();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer cette dépense ?')) return;
-    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', id)
+      .eq('platform_id', PLATFORM_ID);
     if (!error) fetchExpenses();
   };
 

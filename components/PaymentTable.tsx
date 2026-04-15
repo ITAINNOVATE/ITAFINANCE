@@ -9,7 +9,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 // import jsPDF from 'jspdf';
 
-import { supabase } from '../lib/supabase';
+import { supabase, PLATFORM_ID } from '../lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Payment {
@@ -118,8 +118,17 @@ function PaymentModal({
   useEffect(() => {
     if (form.project_id) {
       const fetchStats = async () => {
-        const { data: proj } = await supabase.from('projects').select('total_budget').eq('id', form.project_id).single();
-        const { data: pays } = await supabase.from('payments').select('amount').eq('project_id', form.project_id);
+        const { data: proj } = await supabase
+          .from('projects')
+          .select('total_budget')
+          .eq('id', form.project_id)
+          .eq('platform_id', PLATFORM_ID)
+          .single();
+        const { data: pays } = await supabase
+          .from('payments')
+          .select('amount')
+          .eq('project_id', form.project_id)
+          .eq('platform_id', PLATFORM_ID);
         
         const total = proj?.total_budget || 0;
         const paid = pays?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
@@ -473,11 +482,20 @@ export default function PaymentTable() {
     const { data: pData, error: pErr } = await supabase
       .from('payments')
       .select('*, projects(name), clients(name)')
+      .eq('platform_id', PLATFORM_ID)
       .order('created_at', { ascending: false });
 
     // Fetch projects & clients for the form
-    const { data: prData } = await supabase.from('projects').select('id, name, total_budget, client_id').order('name');
-    const { data: clData } = await supabase.from('clients').select('id, name').order('name');
+    const { data: prData } = await supabase
+      .from('projects')
+      .select('id, name, total_budget, client_id')
+      .eq('platform_id', PLATFORM_ID)
+      .order('name');
+    const { data: clData } = await supabase
+      .from('clients')
+      .select('id, name')
+      .eq('platform_id', PLATFORM_ID)
+      .order('name');
 
     if (!pErr) setPayments((pData ?? []) as Payment[]);
     if (prData) setProjects(prData as Project[]);
@@ -502,6 +520,7 @@ export default function PaymentTable() {
         transaction_id: form.transaction_id || null,
         bank_name: form.bank_name || null,
         reference_number: form.reference_number || null,
+        platform_id: PLATFORM_ID,
       };
 
       const { error } = await supabase.from('payments').insert([payload]);

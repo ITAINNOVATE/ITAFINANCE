@@ -20,7 +20,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { supabase, PLATFORM_ID } from '../lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Schedule {
@@ -215,6 +215,7 @@ export default function EcheancierList() {
     const { data, error } = await supabase
       .from('projects')
       .select('*, clients(name), schedules(*), payments(*)')
+      .eq('platform_id', PLATFORM_ID)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
