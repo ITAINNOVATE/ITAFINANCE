@@ -20,14 +20,21 @@ export default function LoginPage() {
     setError(null);
     
     try {
+      console.log('Attempting login for:', email);
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth Error Details:', authError);
+        throw authError;
+      }
+      
+      console.log('Login successful!');
       router.push('/');
     } catch (err: any) {
+      console.error('Caught Exception during login:', err);
       setError(err.message === 'Invalid login credentials' ? 'Identifiants invalides' : err.message);
       setIsLoading(false);
     }
