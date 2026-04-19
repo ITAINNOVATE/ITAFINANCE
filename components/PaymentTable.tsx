@@ -813,6 +813,3 @@ export default function PaymentTable() {
     </div>
   );
 }
-    </div>
-  );
-}
