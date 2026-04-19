@@ -14,12 +14,13 @@ async function main() {
     console.log('Error message:', error.message);
     console.log('Error details:', error.details);
     console.log('\nThe table may not exist or RLS is blocking access.');
-    console.log('Please create the table manually in the Supabase Dashboard:');
-    console.log('https://supabase.com/dashboard/project/mfturgsjkjexqsbrsohq/sql/new');
-    console.log('\nSQL to run:');
+    console.log('Please check your Supabase Dashboard:');
+    console.log('https://supabase.com/dashboard/project/eqqdjqdbbwmshllqesdt/database/tables');
+    console.log('\nSQL to run if table "clients" is missing:');
     console.log(`
 CREATE TABLE IF NOT EXISTS clients (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  platform_id UUID NOT NULL,
   name TEXT NOT NULL,
   type TEXT CHECK (type IN ('Particulier', 'Entreprise')),
   email TEXT,
@@ -29,11 +30,7 @@ CREATE TABLE IF NOT EXISTS clients (
 );
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Enable all for authenticated users" ON clients;
-DROP POLICY IF EXISTS "Public access for demo" ON clients;
-
-CREATE POLICY "Public access for demo" ON clients FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access for platform" ON clients FOR ALL USING (true) WITH CHECK (true);
     `);
   } else {
     console.log('SUCCESS! Supabase clients table is accessible.');
