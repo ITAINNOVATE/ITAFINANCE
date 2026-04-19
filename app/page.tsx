@@ -164,7 +164,7 @@ export default function Home() {
   return (
     <div className="space-y-8 min-h-screen">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard 
           title="Solde Actuel" 
           value={`${stats.balance.toLocaleString('fr-FR')} FCFA`} 
@@ -172,14 +172,14 @@ export default function Home() {
           color="primary"
         />
         <StatCard 
-          title="Entrées du mois" 
+          title="Entrées" 
           value={`${stats.monthlyIncome.toLocaleString('fr-FR')} FCFA`} 
           icon={TrendingUp} 
           trend={{ value: stats.incomeTrend, positive: true }}
           color="secondary"
         />
         <StatCard 
-          title="Dépenses du mois" 
+          title="Dépenses" 
           value={`${stats.monthlyExpenses.toLocaleString('fr-FR')} FCFA`} 
           icon={TrendingDown} 
           trend={{ value: stats.expenseTrend, positive: false }}
@@ -194,75 +194,90 @@ export default function Home() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div className="lg:col-span-2 glass-card p-5 sm:p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-lg font-bold text-white">Évolution de la Trésorerie</h3>
-              <p className="text-sm text-text-muted">Revenus vs Dépenses (6 derniers mois)</p>
+              <p className="text-[10px] sm:text-sm text-text-muted">Revenus vs Dépenses (6 mois)</p>
             </div>
           </div>
           <RevenueChart data={chartData} />
         </div>
 
-        <div className="glass-card p-6">
-          <h3 className="text-lg font-bold text-white mb-2">Répartition des Dépenses</h3>
-          <p className="text-sm text-text-muted mb-6">Par catégorie ce mois</p>
+        <div className="glass-card p-5 sm:p-6">
+          <h3 className="text-lg font-bold text-white mb-1">Dépenses par catégorie</h3>
+          <p className="text-[10px] sm:text-sm text-text-muted mb-6">Ce mois-ci</p>
           <ExpenseDistribution data={distribution} />
-          <div className="mt-6 space-y-3">
-            {distribution.length === 0 ? (
-              <p className="text-[10px] text-text-muted italic text-center">Aucune dépense ce mois</p>
-            ) : (
-              distribution.map(d => (
-                <div key={d.name} className="flex justify-between items-center text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></span> 
-                    {d.name}
-                  </span>
-                  <span className="font-semibold">{((d.value / Math.max(stats.monthlyExpenses, 1)) * 100).toFixed(0)}%</span>
-                </div>
-              ))
-            )}
-          </div>
         </div>
       </div>
 
       {/* Bottom Features */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 pb-12">
         {/* Recent Projects */}
-        <div className="glass-card overflow-hidden">
-          <div className="flex justify-between items-center mb-6 px-6 pt-6">
+        <div className="glass-card overflow-hidden h-fit">
+          <div className="flex justify-between items-center px-5 sm:px-6 py-5 sm:py-6">
             <h3 className="text-lg font-bold text-white">Projets Récents</h3>
-            <button className="text-primary text-sm font-medium hover:underline flex items-center gap-1">
+            <button className="text-primary text-sm font-bold hover:underline flex items-center gap-1">
               Voir tout <ArrowUpRight size={14} />
             </button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+
+          {/* Mobile Cards for Projects */}
+          <div className="px-5 pb-5 space-y-3 sm:hidden">
+            {recentProjects.length === 0 ? (
+              <p className="text-center py-4 text-text-muted italic text-sm">Aucun projet</p>
+            ) : (
+              recentProjects.map((project, i) => (
+                <div key={i} className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-bold text-white leading-snug">{project.name}</h4>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${project.statusColor}`}>
+                      {project.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-0.5">Client</span>
+                      <span className="text-[11px] font-bold text-white">{project.client}</span>
+                    </div>
+                    <div className="text-right flex flex-col">
+                      <span className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-0.5">Budget</span>
+                      <span className="text-[11px] font-black text-secondary">{project.budget} FCFA</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
-                <tr className="border-b border-white/5 text-[11px] uppercase tracking-[0.15em] text-text-muted/60 bg-white/2">
-                  <th className="px-8 py-5 font-bold">Projet</th>
-                  <th className="px-8 py-5 font-bold">Client</th>
-                  <th className="px-8 py-5 font-bold">Status</th>
-                  <th className="px-8 py-5 font-bold">Budget</th>
+                <tr className="border-b border-white/5 text-[10px] uppercase tracking-[0.15em] text-text-muted bg-white/[0.02]">
+                  <th className="px-6 py-4 font-bold">Projet</th>
+                  <th className="px-6 py-4 font-bold">Client</th>
+                  <th className="px-6 py-4 font-bold">Status</th>
+                  <th className="px-6 py-4 font-bold text-right pr-8">Budget</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {recentProjects.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-8 py-10 text-center text-text-muted italic">Aucun projet enregistré</td>
+                    <td colSpan={4} className="px-6 py-10 text-center text-text-muted italic">Aucun projet enregistré</td>
                   </tr>
                 ) : (
                   recentProjects.map((project, i) => (
                     <tr key={i} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
-                      <td className="px-8 py-5 font-bold text-white group-hover:text-primary transition-colors">{project.name}</td>
-                      <td className="px-8 py-5 text-text-muted font-medium">{project.client}</td>
-                      <td className="px-8 py-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${project.statusColor}`}>
+                      <td className="px-6 py-4 font-bold text-white group-hover:text-primary transition-colors">{project.name}</td>
+                      <td className="px-6 py-4 text-text-muted font-medium">{project.client}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${project.statusColor}`}>
                           {project.status}
                         </span>
                       </td>
-                      <td className="px-8 py-5 font-black text-white">{project.budget} FCFA</td>
+                      <td className="px-6 py-4 font-black text-white text-right pr-8">{project.budget} FCFA</td>
                     </tr>
                   ))
                 )}

@@ -12,6 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   
   // Handling redirection
   React.useEffect(() => {
@@ -19,6 +20,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       router.push('/login');
     }
   }, [user, loading, pathname, router]);
+
+  // Close sidebar on navigation (mobile)
+  React.useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [pathname]);
 
   // Mapping paths to titles
   const titles: Record<string, string> = {
@@ -78,10 +84,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      <Sidebar />
-      <main className="flex-1 transition-all duration-300 min-h-screen flex flex-col relative z-10 pl-[280px]">
-        <Header title={title} />
-        <div className="p-10 pb-20 overflow-x-hidden">
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      <main className="flex-1 transition-all duration-300 min-h-screen flex flex-col relative z-10 lg:pl-[280px]">
+        <Header title={title} onMenuClick={() => setIsSidebarOpen(true)} />
+        <div className="p-4 sm:p-10 pb-20 overflow-x-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}

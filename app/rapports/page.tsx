@@ -211,14 +211,14 @@ export default function RapportsPage() {
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
           <h3 className="text-sm font-black text-white uppercase tracking-widest">Répartition des Flux</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">
+          <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr className="border-b border-white/10 text-[10px] uppercase tracking-[0.2em] text-text-muted/60 bg-white/5">
-                <th className="px-8 py-5 font-black">Catégorie</th>
-                <th className="px-8 py-5 font-black">Transactions</th>
-                <th className="px-8 py-5 font-black text-right">Volume</th>
-                <th className="px-8 py-5 font-black text-right">Part relative</th>
+                <th className="px-5 sm:px-8 py-5 font-black">Catégorie</th>
+                <th className="px-5 sm:px-8 py-5 font-black">Transactions</th>
+                <th className="px-5 sm:px-8 py-5 font-black text-right">Volume</th>
+                <th className="px-5 sm:px-8 py-5 font-black text-right">Part relative</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -229,19 +229,19 @@ export default function RapportsPage() {
               ) : (
                 categories.map((row, i) => (
                   <tr key={i} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
-                    <td className="px-8 py-5">
+                    <td className="px-5 sm:px-8 py-5">
                       <div className="flex items-center gap-3">
                          <span className={`w-2.5 h-2.5 rounded-full ${row.color} shadow-lg shadow-current/20`}></span>
-                         <span className="font-bold text-white group-hover:text-primary transition-colors">
+                         <span className="font-bold text-white group-hover:text-primary transition-colors whitespace-nowrap">
                            {row.cat}
                          </span>
                       </div>
                     </td>
-                    <td className="px-8 py-5 text-text-muted font-medium">{row.count}</td>
-                    <td className="px-8 py-5 text-right font-black text-white">{row.volume.toLocaleString('fr-FR')} FCFA</td>
-                    <td className="px-8 py-5">
+                    <td className="px-5 sm:px-8 py-5 text-text-muted font-medium">{row.count}</td>
+                    <td className="px-5 sm:px-8 py-5 text-right font-black text-white whitespace-nowrap">{row.volume.toLocaleString('fr-FR')} FCFA</td>
+                    <td className="px-5 sm:px-8 py-5">
                       <div className="flex items-center justify-end gap-3">
-                        <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden hidden md:block border border-white/5">
+                        <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden hidden sm:block border border-white/5">
                           <div className={`h-full ${row.color}`} style={{ width: `${row.part}%` }}></div>
                         </div>
                         <span className="font-black text-[10px] text-white tracking-tighter w-8 text-right">{row.part.toFixed(1)}%</span>

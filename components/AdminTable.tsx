@@ -126,66 +126,125 @@ export default function AdminTable() {
         </button>
       </div>
 
-      {/* Table Section */}
+      {/* Main Interface */}
       <div className="glass-card overflow-hidden border border-white/5">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-white/[0.02] border-b border-white/5">
-              <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Utilisateur</th>
-              <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Rôle</th>
-              <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Permissions</th>
-              <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {profiles.map((p) => (
-              <tr key={p.id} className="hover:bg-white/[0.01] transition-colors group">
-                <td className="px-6 py-4">
+        {/* Mobile View Cards */}
+        <div className="grid gap-4 p-4 md:hidden">
+          {profiles.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+              <Shield size={48} className="text-white/5 mb-4" />
+              <p className="text-white font-bold">Aucun utilisateur</p>
+            </div>
+          ) : (
+            profiles.map((p) => (
+              <div key={p.id} className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-4">
+                <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                      <Mail size={14} className="text-text-muted" />
+                    <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                      <Mail size={14} className="text-primary" />
                     </div>
-                    <span className="text-sm font-bold text-white">{p.email}</span>
+                    <div>
+                      <p className="text-sm font-bold text-white truncate max-w-[150px]">{p.email}</p>
+                      <div className={`mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[8px] font-black uppercase tracking-tighter ${p.role === 'admin' ? 'bg-secondary/10 border-secondary/20 text-secondary' : 'bg-white/5 border-white/10 text-text-muted'}`}>
+                        {p.role === 'admin' ? <ShieldCheck size={10} /> : <Shield size={10} />}
+                        {p.role}
+                      </div>
+                    </div>
                   </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-black uppercase tracking-tighter ${p.role === 'admin' ? 'bg-secondary/10 border-secondary/20 text-secondary' : 'bg-white/5 border-white/10 text-text-muted'}`}>
-                    {p.role === 'admin' ? <ShieldCheck size={12} /> : <Shield size={12} />}
-                    {p.role}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1">
-                    {p.permissions.length === 0 ? (
-                      <span className="text-[10px] text-text-muted/40 italic">Aucun accès</span>
-                    ) : (
-                      p.permissions.slice(0, 3).map(m => (
-                        <span key={m} className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] text-primary font-bold">{m}</span>
-                      ))
-                    )}
-                    {p.permissions.length > 3 && <span className="text-[9px] text-text-muted font-bold">+{p.permissions.length - 3}</span>}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex gap-2">
                     <button 
                       onClick={() => { setSelectedProfile(p); setIsModalOpen(true); }}
-                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-all border border-white/5"
+                      className="p-2 rounded-xl bg-white/5 text-text-muted hover:text-white border border-white/5"
                     >
                       <Settings size={14} />
                     </button>
                     <button 
                       onClick={() => handleDelete(p.id)}
-                      className="p-2 rounded-xl bg-white/5 hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-all border border-white/5"
+                      className="p-2 rounded-xl bg-white/5 text-text-muted hover:text-red-500 border border-white/5"
                     >
                       <Trash2 size={14} />
                     </button>
                   </div>
-                </td>
+                </div>
+
+                <div className="pt-3 border-t border-white/5">
+                  <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-2">Permissions</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {p.permissions.length === 0 ? (
+                      <span className="text-[10px] text-text-muted/40 italic">Aucun accès</span>
+                    ) : (
+                      p.permissions.map(m => (
+                        <span key={m} className="px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/20 text-[9px] text-primary font-bold">{m}</span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left whitespace-nowrap">
+            <thead>
+              <tr className="bg-white/[0.02] border-b border-white/5">
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Utilisateur</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Rôle</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Permissions</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right pr-8">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {profiles.map((p) => (
+                <tr key={p.id} className="hover:bg-white/[0.01] transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                        <Mail size={14} className="text-text-muted" />
+                      </div>
+                      <span className="text-sm font-bold text-white">{p.email}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-black uppercase tracking-tighter ${p.role === 'admin' ? 'bg-secondary/10 border-secondary/20 text-secondary' : 'bg-white/5 border-white/10 text-text-muted'}`}>
+                      {p.role === 'admin' ? <ShieldCheck size={12} /> : <Shield size={12} />}
+                      {p.role}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {p.permissions.length === 0 ? (
+                        <span className="text-[10px] text-text-muted/40 italic">Aucun accès</span>
+                      ) : (
+                        p.permissions.slice(0, 3).map(m => (
+                          <span key={m} className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] text-primary font-bold">{m}</span>
+                        ))
+                      )}
+                      {p.permissions.length > 3 && <span className="text-[9px] text-text-muted font-bold">+{p.permissions.length - 3}</span>}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right pr-8">
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => { setSelectedProfile(p); setIsModalOpen(true); }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-text-muted hover:text-white transition-all border border-white/5"
+                      >
+                        <Settings size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(p.id)}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-red-500/10 text-text-muted hover:text-red-500 transition-all border border-white/5"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Create User Modal */}

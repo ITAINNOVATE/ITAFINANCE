@@ -360,69 +360,129 @@ export default function EcheancierList() {
             ))}
           </div>
         ) : (
-          <div className="glass-card p-0 overflow-hidden border border-white/5 bg-white/[0.02]">
-            <table className="w-full text-left border-collapse whitespace-nowrap min-w-max">
-              <thead>
-                <tr className="border-b border-white/5 text-[10px] uppercase tracking-wider text-text-muted bg-white/[0.02]">
-                  <th className="px-5 py-4 font-black text-center">Date prévue</th>
-                  <th className="px-5 py-4 font-black">Projet / Client</th>
-                  <th className="px-5 py-4 font-black">Statut</th>
-                  <th className="px-5 py-4 font-black text-right">Montant</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {projects.flatMap(p => p.schedules.map(s => ({ ...s, projectName: p.name, clientName: p.clients?.name || 'Inconnu' })))
-                  .filter(s => {
-                    if (filterMode === 'all') return true;
-                    const date = new Date(s.due_date);
-                    const now = new Date();
-                    if (filterMode === 'today') return date.toDateString() === now.toDateString();
-                    if (filterMode === 'week') {
-                      const nextWeek = new Date(); nextWeek.setDate(now.getDate() + 7);
-                      return date >= now && date <= nextWeek;
-                    }
-                    if (filterMode === 'month') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-                    return true;
-                  })
-                  .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-                  .map((s, i) => {
-                    const isOverdue = s.status !== 'Payé' && new Date(s.due_date) < new Date(new Date().setHours(0,0,0,0));
-                    return (
-                      <motion.tr 
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                        key={s.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group"
-                      >
-                        <td className="px-5 py-4">
-                          <div className={`flex flex-col items-center justify-center p-2 rounded-xl border ${isOverdue ? 'bg-red-400/10 border-red-400/20 text-red-500' : 'bg-white/5 border-white/5 text-text-muted'}`}>
-                            <span className="text-xs font-black">{new Date(s.due_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span>
-                            <span className="text-[9px] font-bold uppercase">{new Date(s.due_date).getFullYear()}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div>
-                            <p className="font-bold text-white group-hover:text-primary transition-colors">{s.projectName}</p>
-                            <p className="text-[10px] text-text-muted uppercase font-black tracking-widest mt-1">{s.clientName}</p>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
-                            s.status === 'Payé' ? 'bg-secondary/10 text-secondary border border-secondary/20' : 
-                            isOverdue ? 'bg-red-400/10 text-red-500 border border-red-400/20 animate-pulse' : 'bg-white/5 text-text-muted border border-white/10'
-                          }`}>
-                            {isOverdue ? 'EN RETARD' : s.status}
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 font-black text-white text-right">{formatCFA(s.amount)}</td>
-                      </motion.tr>
-                    );
-                  })}
-              </tbody>
-            </table>
+          <div className="space-y-4">
+            {/* Mobile View Cards */}
+            <div className="grid gap-4 lg:hidden">
+              {projects.flatMap(p => p.schedules.map(s => ({ ...s, projectName: p.name, clientName: p.clients?.name || 'Inconnu' })))
+                .filter(s => {
+                  if (filterMode === 'all') return true;
+                  const date = new Date(s.due_date);
+                  const now = new Date();
+                  if (filterMode === 'today') return date.toDateString() === now.toDateString();
+                  if (filterMode === 'week') {
+                    const nextWeek = new Date(); nextWeek.setDate(now.getDate() + 7);
+                    return date >= now && date <= nextWeek;
+                  }
+                  if (filterMode === 'month') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                  return true;
+                })
+                .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+                .map((s, i) => {
+                  const isOverdue = s.status !== 'Payé' && new Date(s.due_date) < new Date(new Date().setHours(0,0,0,0));
+                  return (
+                    <motion.div
+                      key={s.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="glass-card p-4 border border-white/5 space-y-3"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className={`p-2 rounded-xl border flex flex-col items-center min-w-[50px] ${isOverdue ? 'bg-red-400/10 border-red-400/20 text-red-500' : 'bg-white/5 border-white/5 text-text-muted'}`}>
+                          <span className="text-[10px] font-black">{new Date(s.due_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span>
+                          <span className="text-[8px] font-bold uppercase">{new Date(s.due_date).getFullYear()}</span>
+                        </div>
+                        <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                          s.status === 'Payé' ? 'bg-secondary/10 text-secondary border border-secondary/20' : 
+                          isOverdue ? 'bg-red-400/10 text-red-500 border border-red-400/20 animate-pulse' : 'bg-white/5 text-text-muted border border-white/10'
+                        }`}>
+                          {isOverdue ? 'Retard' : s.status}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-bold text-white text-sm">{s.projectName}</p>
+                        <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest mt-0.5">{s.clientName}</p>
+                      </div>
+                      <div className="pt-2 border-t border-white/5 flex justify-between items-center">
+                        <span className="text-[9px] font-black text-text-muted uppercase">Montant prévu</span>
+                        <span className="text-sm font-black text-white">{formatCFA(s.amount)}</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block glass-card p-0 overflow-hidden border border-white/5 bg-white/[0.02]">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse whitespace-nowrap">
+                  <thead>
+                    <tr className="border-b border-white/5 text-[10px] uppercase tracking-wider text-text-muted bg-white/[0.02]">
+                      <th className="px-5 py-4 font-black text-center">Date prévue</th>
+                      <th className="px-5 py-4 font-black">Projet / Client</th>
+                      <th className="px-5 py-4 font-black">Statut</th>
+                      <th className="px-5 py-4 font-black text-right pr-6">Montant</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm">
+                    {projects.flatMap(p => p.schedules.map(s => ({ ...s, projectName: p.name, clientName: p.clients?.name || 'Inconnu' })))
+                      .filter(s => {
+                        if (filterMode === 'all') return true;
+                        const date = new Date(s.due_date);
+                        const now = new Date();
+                        if (filterMode === 'today') return date.toDateString() === now.toDateString();
+                        if (filterMode === 'week') {
+                          const nextWeek = new Date(); nextWeek.setDate(now.getDate() + 7);
+                          return date >= now && date <= nextWeek;
+                        }
+                        if (filterMode === 'month') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                        return true;
+                      })
+                      .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+                      .map((s, i) => {
+                        const isOverdue = s.status !== 'Payé' && new Date(s.due_date) < new Date(new Date().setHours(0,0,0,0));
+                        return (
+                          <motion.tr 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }}
+                            key={s.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group"
+                          >
+                            <td className="px-5 py-4">
+                              <div className={`flex flex-col items-center justify-center p-2 rounded-xl border mx-auto w-fit ${isOverdue ? 'bg-red-400/10 border-red-400/20 text-red-500' : 'bg-white/10 border-white/10 text-white'}`}>
+                                <span className="text-[10px] font-black">{new Date(s.due_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span>
+                                <span className="text-[8px] font-bold uppercase">{new Date(s.due_date).getFullYear()}</span>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div>
+                                <p className="font-bold text-white group-hover:text-primary transition-colors">{s.projectName}</p>
+                                <p className="text-[10px] text-text-muted uppercase font-black tracking-widest mt-1">{s.clientName}</p>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                                s.status === 'Payé' ? 'bg-secondary/10 text-secondary border border-secondary/20' : 
+                                isOverdue ? 'bg-red-400/10 text-red-500 border border-red-400/20 animate-pulse' : 'bg-white/5 text-text-muted border border-white/10'
+                              }`}>
+                                {isOverdue ? 'EN RETARD' : s.status}
+                              </div>
+                            </td>
+                            <td className="px-5 py-4 font-black text-white text-right pr-6">{formatCFA(s.amount)}</td>
+                          </motion.tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             
             {projects.flatMap(p => p.schedules).length === 0 && (
-              <div className="py-20 flex flex-col items-center">
-                <Calendar size={48} className="text-white/10 mb-4" />
-                <p className="text-text-muted font-bold text-sm">Aucune échéance à afficher</p>
+              <div className="py-24 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                  <Calendar size={32} className="text-white/10" />
+                </div>
+                <p className="text-white font-bold">Aucune échéance à afficher</p>
+                <p className="text-text-muted text-xs mt-1">Ajustez vos filtres ou planifiez de nouvelles échéances.</p>
               </div>
             )}
           </div>

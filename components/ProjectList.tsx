@@ -723,7 +723,8 @@ export default function ProjectList() {
             project_id: editingProject.id,
             due_date: inst.due_date,
             amount: parseFloat(inst.amount) || 0,
-            status: 'En attente'
+            status: 'En attente',
+            platform_id: PLATFORM_ID
           }));
           const { error: scheduleError } = await supabase.from('schedules').insert(schedulePayload);
           if (scheduleError) throw scheduleError;
@@ -740,7 +741,8 @@ export default function ProjectList() {
             project_id: newProject.id,
             due_date: inst.due_date,
             amount: parseFloat(inst.amount) || 0,
-            status: 'En attente'
+            status: 'En attente',
+            platform_id: PLATFORM_ID
           }));
           const { error: scheduleError } = await supabase.from('schedules').insert(schedulePayload);
           if (scheduleError) throw scheduleError;
@@ -751,8 +753,9 @@ export default function ProjectList() {
       setIsModalOpen(false);
       setEditingProject(null);
       await fetchProjects();
-    } catch {
-      showToast('Une erreur est survenue.', 'error');
+    } catch (e: any) {
+      console.error(e);
+      showToast(e.message || 'Une erreur est survenue. Veuillez réessayer.', 'error');
     } finally {
       setIsSaving(false);
     }

@@ -463,6 +463,64 @@ function PaymentModal({
 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Payment Card (Mobile View) ────────────────────────────────────────────────
+function PaymentCard({ 
+  payment: p, 
+  onGenerateRecu 
+}: { 
+  payment: Payment; 
+  onGenerateRecu: (p: Payment) => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card p-5 space-y-4 group"
+    >
+      <div className="flex justify-between items-start">
+        <div className="space-y-1">
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">{formatDate(p.payment_date)}</p>
+          <h4 className="text-sm font-black text-white group-hover:text-primary transition-colors leading-snug">
+            {p.projects?.name || 'Projet inconnu'}
+          </h4>
+          <p className="text-[11px] font-bold text-text-muted flex items-center gap-1.5 mt-1">
+            <User size={10} className="text-primary/60" />
+            {p.clients?.name || 'Client inconnu'}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-black text-secondary">{formatCFA(p.amount)}</p>
+          <div className="mt-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/5 inline-flex items-center gap-1.5 text-[9px] font-black text-text-muted uppercase">
+            {p.payment_method === 'Virement' && <CreditCard size={10} className="text-blue-400" />}
+            {p.payment_method === 'Mobile Money' && <Smartphone size={10} className="text-yellow-400" />}
+            {p.payment_method === 'Espèces' && <Banknote size={10} className="text-green-400" />}
+            {p.payment_method === 'Chèque' && <Ticket size={10} className="text-purple-400" />}
+            {p.payment_method}
+          </div>
+        </div>
+      </div>
+
+      {p.notes && (
+        <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+          <p className="text-[10px] text-text-muted italic leading-relaxed">"{p.notes}"</p>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button 
+          onClick={() => onGenerateRecu(p)}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
+        >
+          <FileDown size={14} />
+          Télécharger Reçu
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function PaymentTable() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -508,8 +566,6 @@ export default function PaymentTable() {
   const handleSave = async (form: FormData) => {
     setIsSaving(true);
     try {
-      // No more note-packing, we use real columns
-
       const payload = {
         project_id: form.project_id || null,
         client_id: form.client_id || null,
@@ -541,7 +597,6 @@ export default function PaymentTable() {
     try {
       const { default: jsPDF } = await import('jspdf');
       const doc = new jsPDF();
-
       
       // Header
       doc.setFontSize(22);
@@ -559,7 +614,7 @@ export default function PaymentTable() {
       // Body
       doc.setFontSize(12);
       doc.setTextColor(0);
-      const ref = p.id.split('-')[0].toUpperCase().substring(0, 8); // Short hash
+      const ref = p.id.split('-')[0].toUpperCase().substring(0, 8);
       doc.text(`Référence: PAY-${ref}`, 20, 40);
       doc.text(`Date: ${formatDate(p.payment_date)}`, 20, 50);
       doc.text(`Heure d'édition: ${new Date().toLocaleTimeString('fr-FR')}`, 20, 56);
@@ -592,7 +647,6 @@ export default function PaymentTable() {
       // Table Row
       doc.setFontSize(12);
       doc.setTextColor(0);
-      // Display specific transaction info if available
       let yPos = 122;
       doc.text(p.notes || 'Règlement de service', 25, yPos);
       doc.text(p.payment_method, 110, yPos);
@@ -646,7 +700,7 @@ export default function PaymentTable() {
   const totalRevenue = filtered.reduce((s, p) => s + p.amount, 0);
 
   return (
-    <div className="space-y-6 flex flex-col items-center sm:items-stretch w-full">
+    <div className="space-y-6 w-full">
       <AnimatePresence>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </AnimatePresence>
@@ -657,13 +711,13 @@ export default function PaymentTable() {
       />
 
       {/* Header controls (Stats + Search) */}
-      <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4 w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 w-full">
         <div className="glass-card px-5 py-3 flex flex-col bg-secondary/5 border-secondary/20 shadow-lg shadow-secondary/5">
-          <span className="text-[10px] text-secondary font-black tracking-widest uppercase mb-0.5">Total Recettes</span>
-          <span className="text-xl font-black text-white">{formatCFA(totalRevenue)}</span>
+          <span className="text-[10px] text-secondary font-black tracking-widest uppercase mb-0.5 text-center sm:text-left">Total Recettes</span>
+          <span className="text-xl font-black text-white text-center sm:text-left">{formatCFA(totalRevenue)}</span>
         </div>
 
-        <div className="flex gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
             <input 
@@ -674,9 +728,9 @@ export default function PaymentTable() {
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 whitespace-nowrap"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 whitespace-nowrap"
           >
-            <Plus size={16} /> <span className="hidden sm:inline">Nouveau paiement</span>
+            <Plus size={16} /> <span>Nouveau paiement</span>
           </button>
         </div>
       </div>
@@ -690,62 +744,75 @@ export default function PaymentTable() {
         <div className="glass-card py-20 flex flex-col items-center">
           <FileText size={48} className="text-white/10 mb-4" />
           <p className="text-white font-bold mb-1">Aucune transaction trouvée</p>
-          <p className="text-text-muted text-sm text-center max-w-sm">Si vous cherchez un paiement spécifique, vérifiez les termes de recherche ou ajoutez un nouveau paiement.</p>
+          <p className="text-text-muted text-sm text-center max-w-sm px-6">Si vous cherchez un paiement spécifique, vérifiez les termes de recherche ou ajoutez un nouveau paiement.</p>
         </div>
       ) : (
-        <div className="glass-card p-0 overflow-hidden shadow-xl w-full">
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse whitespace-nowrap min-w-max">
-              <thead>
-                <tr className="border-b border-white/5 text-[10px] uppercase tracking-wider text-text-muted bg-white/[0.02]">
-                  <th className="px-5 py-4 font-black">Date</th>
-                  <th className="px-5 py-4 font-black">Projet / Client</th>
-                  <th className="px-5 py-4 font-black">Méthode</th>
-                  <th className="px-5 py-4 font-black">Description</th>
-                  <th className="px-5 py-4 font-black text-right">Montant</th>
-                  <th className="px-5 py-4 font-black text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {filtered.map((p, i) => (
-                  <motion.tr 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                    key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group"
-                  >
-                    <td className="px-5 py-4 font-bold text-text-muted/80">{formatDate(p.payment_date)}</td>
-                    <td className="px-5 py-4">
-                      <div>
-                        <p className="font-bold text-white leading-tight">{p.projects?.name || '—'}</p>
-                        <p className="text-[11px] font-medium text-text-muted flex items-center gap-1 mt-0.5"><span className="w-1.5 h-1.5 rounded-full bg-white/20"></span>{p.clients?.name || '—'}</p>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-text-muted">
-                        {p.payment_method === 'Virement' && <CreditCard size={12} className="text-blue-400" />}
-                        {p.payment_method === 'Mobile Money' && <Smartphone size={12} className="text-yellow-400" />}
-                        {p.payment_method === 'Espèces' && <Banknote size={12} className="text-green-400" />}
-                        {p.payment_method === 'Chèque' && <Ticket size={12} className="text-purple-400" />}
-                        {p.payment_method}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-text-muted truncate max-w-[200px]" title={p.notes || ''}>{p.notes || '—'}</td>
-                    <td className="px-5 py-4 font-black text-secondary text-right">{formatCFA(p.amount)}</td>
-                    <td className="px-5 py-4 text-center">
-                      <button 
-                        onClick={() => generatePDF(p)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all border border-primary/20"
-                      >
-                        <FileDown size={14} />
-                        <span className="text-[10px] font-black tracking-wider uppercase">Reçu</span>
-                      </button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          {/* Mobile View */}
+          <div className="grid gap-4 sm:hidden">
+            {filtered.map(p => (
+              <PaymentCard key={p.id} payment={p} onGenerateRecu={generatePDF} />
+            ))}
           </div>
-        </div>
+
+          {/* Desktop View */}
+          <div className="glass-card p-0 overflow-hidden shadow-xl w-full hidden sm:block">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse whitespace-nowrap min-w-max">
+                <thead>
+                  <tr className="border-b border-white/5 text-[10px] uppercase tracking-wider text-text-muted bg-white/[0.02]">
+                    <th className="px-5 py-4 font-black">Date</th>
+                    <th className="px-5 py-4 font-black">Projet / Client</th>
+                    <th className="px-5 py-4 font-black">Méthode</th>
+                    <th className="px-5 py-4 font-black">Description</th>
+                    <th className="px-5 py-4 font-black text-right">Montant</th>
+                    <th className="px-5 py-4 font-black text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {filtered.map((p, i) => (
+                    <motion.tr 
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                      key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group"
+                    >
+                      <td className="px-5 py-4 font-bold text-text-muted/80">{formatDate(p.payment_date)}</td>
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="font-bold text-white leading-tight">{p.projects?.name || '—'}</p>
+                          <p className="text-[11px] font-medium text-text-muted flex items-center gap-1 mt-0.5"><span className="w-1.5 h-1.5 rounded-full bg-white/20"></span>{p.clients?.name || '—'}</p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-text-muted">
+                          {p.payment_method === 'Virement' && <CreditCard size={12} className="text-blue-400" />}
+                          {p.payment_method === 'Mobile Money' && <Smartphone size={12} className="text-yellow-400" />}
+                          {p.payment_method === 'Espèces' && <Banknote size={12} className="text-green-400" />}
+                          {p.payment_method === 'Chèque' && <Ticket size={12} className="text-purple-400" />}
+                          {p.payment_method}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-text-muted truncate max-w-[200px]" title={p.notes || ''}>{p.notes || '—'}</td>
+                      <td className="px-5 py-4 font-black text-secondary text-right">{formatCFA(p.amount)}</td>
+                      <td className="px-5 py-4 text-center">
+                        <button 
+                          onClick={() => generatePDF(p)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all border border-primary/20"
+                        >
+                          <FileDown size={14} />
+                          <span className="text-[10px] font-black tracking-wider uppercase">Reçu</span>
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
+    </div>
+  );
+}
     </div>
   );
 }
